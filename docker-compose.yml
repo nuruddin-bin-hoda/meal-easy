@@ -29,10 +29,13 @@ services:
       retries: 3
 
   client:
-    build: ./client
+    build:
+      context: ./client
+      args:
+        VITE_API_URL: http://localhost:5001/api/v1
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3000:80"
     depends_on:
       - server
 
