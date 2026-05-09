@@ -23,6 +23,7 @@ app.get('/api/v1/health', (_req, res) => res.json({ status: 'ok' }));
 
 app.use('/api/v1/auth', require('./routes/authRoutes'));
 app.use('/api/v1', require('./routes/userRoutes'));
+app.use('/api/v1', require('./routes/adminRoutes'));
 
 app.use(errorHandler);
 
