@@ -25,6 +25,7 @@ app.use('/api/v1/auth', require('./routes/authRoutes'));
 app.use('/api/v1', require('./routes/userRoutes'));
 app.use('/api/v1', require('./routes/adminRoutes'));
 app.use('/api/v1', require('./routes/settingsRoutes'));
+app.use('/api/v1', require('./routes/mealRoutes'));
 
 app.use(errorHandler);
 
