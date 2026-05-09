@@ -1,0 +1,17 @@
+module.exports = {
+  User: require('./User'),
+  Chef: require('./Chef'),
+  MessSettings: require('./MessSettings'),
+  MealToggle: require('./MealToggle'),
+  Menu: require('./Menu'),
+  Purchase: require('./Purchase'),
+  OtherCost: require('./OtherCost'),
+  BillingCycle: require('./BillingCycle'),
+  UserBill: require('./UserBill'),
+  Deposit: require('./Deposit'),
+  Stock: require('./Stock'),
+  ChefSalary: require('./ChefSalary'),
+  ChefBonus: require('./ChefBonus'),
+  AuditLog: require('./AuditLog'),
+  Notification: require('./Notification'),
+};

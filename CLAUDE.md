@@ -86,6 +86,20 @@ See `.env.example`. Key vars:
 - VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT
 - CLIENT_URL (for CORS)
 
+### MONGO_URI — Important
+
+Two valid values depending on where the server runs:
+
+- Inside Docker Compose: `mongodb://mongo:27017/meal-easy`
+  ('mongo' is the Docker internal container hostname)
+- Directly on Mac (npm run dev): `mongodb://localhost:27017/meal-easy`
+
+The .env file uses the Docker value by default.
+When testing outside Docker, override inline:
+MONGO_URI=mongodb://localhost:27017/meal-easy npm run dev
+
+Never permanently change .env to localhost — it will break inside Docker.
+
 ## Development Phases (completed items tracked here)
 
 - [ ] Phase 1: Foundation & Auth
