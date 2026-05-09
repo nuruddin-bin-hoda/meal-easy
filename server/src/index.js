@@ -27,6 +27,7 @@ app.use('/api/v1', require('./routes/adminRoutes'));
 app.use('/api/v1', require('./routes/settingsRoutes'));
 app.use('/api/v1', require('./routes/mealRoutes'));
 app.use('/api/v1', require('./routes/menuRoutes'));
+app.use('/api/v1', require('./routes/chefRoutes'));
 
 app.use(errorHandler);
 
