@@ -1,0 +1,192 @@
+import { useState, useEffect, useCallback } from 'react';
+import { addDays, format } from 'date-fns';
+import {
+  Alert, Box, Button, Card, CardActions, CardContent, CardHeader,
+  Chip, CircularProgress, Container, Snackbar, Stack, TextField, Typography,
+} from '@mui/material';
+import api from '../api/axios';
+
+const todayPlusOne = () => format(addDays(new Date(), 1), 'yyyy-MM-dd');
+
+function ChipInput({ mealType, items, inputValue, onAdd, onDelete, onInputChange }) {
+  const handleKeyDown = (e) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const val = inputValue.trim();
+    if (val && !items.includes(val)) onAdd(mealType, val);
+  };
+
+  return (
+    <Box>
+      {items.length > 0 && (
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mb: 1.5 }}>
+          {items.map(item => (
+            <Chip
+              key={item}
+              label={item}
+              onDelete={() => onDelete(mealType, item)}
+              size="small"
+            />
+          ))}
+        </Box>
+      )}
+      <TextField
+        value={inputValue}
+        onChange={e => onInputChange(mealType, e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder="Type item and press Enter"
+        size="small"
+        fullWidth
+        helperText="Press Enter to add"
+      />
+    </Box>
+  );
+}
+
+export default function SetMenuPage() {
+  const [date, setDate] = useState(todayPlusOne);
+  const [mealTypes, setMealTypes] = useState([]);
+  const [items, setItems] = useState({});
+  const [inputs, setInputs] = useState({});
+  const [loadingSettings, setLoadingSettings] = useState(true);
+  const [loadingMenus, setLoadingMenus] = useState(false);
+  const [saving, setSaving] = useState({});
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+
+  useEffect(() => {
+    api.get('/settings').then(res => {
+      const active = (res.data.mealTypes ?? []).filter(mt => mt.isActive).map(mt => mt.name);
+      setMealTypes(active);
+      setItems(Object.fromEntries(active.map(n => [n, []])));
+      setInputs(Object.fromEntries(active.map(n => [n, ''])));
+    }).catch(() => {
+      setSnackbar({ open: true, message: 'Failed to load settings', severity: 'error' });
+    }).finally(() => setLoadingSettings(false));
+  }, []);
+
+  useEffect(() => {
+    if (!mealTypes.length) return;
+    setLoadingMenus(true);
+    api.get(`/menus/${date}`).then(res => {
+      const fetched = res.data.menus ?? {};
+      setItems(Object.fromEntries(mealTypes.map(n => [n, fetched[n] ?? []])));
+    }).catch(() => {
+      setItems(Object.fromEntries(mealTypes.map(n => [n, []])));
+    }).finally(() => setLoadingMenus(false));
+  }, [date, mealTypes]);
+
+  const handleAdd = useCallback((mealType, value) => {
+    setItems(prev => ({ ...prev, [mealType]: [...(prev[mealType] ?? []), value] }));
+    setInputs(prev => ({ ...prev, [mealType]: '' }));
+  }, []);
+
+  const handleDelete = useCallback((mealType, value) => {
+    setItems(prev => ({ ...prev, [mealType]: prev[mealType].filter(i => i !== value) }));
+  }, []);
+
+  const handleInputChange = useCallback((mealType, value) => {
+    setInputs(prev => ({ ...prev, [mealType]: value }));
+  }, []);
+
+  const handleSave = async (mealType) => {
+    setSaving(s => ({ ...s, [mealType]: true }));
+    try {
+      await api.post('/menus', { date, mealType, items: items[mealType] ?? [] });
+      setSnackbar({ open: true, message: `${mealType} menu saved`, severity: 'success' });
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.message ?? 'Failed to save menu',
+        severity: 'error',
+      });
+    } finally {
+      setSaving(s => ({ ...s, [mealType]: false }));
+    }
+  };
+
+  if (loadingSettings) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  return (
+    <Container maxWidth="sm" sx={{ py: 3, px: 2 }}>
+      <Typography variant="h5" fontWeight={700} gutterBottom>
+        Set Menu
+      </Typography>
+
+      <TextField
+        type="date"
+        label="Date"
+        value={date}
+        onChange={e => setDate(e.target.value)}
+        fullWidth
+        sx={{ mb: 3 }}
+        slotProps={{ inputLabel: { shrink: true } }}
+      />
+
+      {mealTypes.length === 0 && (
+        <Alert severity="info">No active meal types configured in settings.</Alert>
+      )}
+
+      {loadingMenus ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+          <CircularProgress size={28} />
+        </Box>
+      ) : (
+        <Stack spacing={2}>
+          {mealTypes.map(mealType => (
+            <Card key={mealType} elevation={2}>
+              <CardHeader
+                title={mealType}
+                titleTypographyProps={{ variant: 'h6', fontWeight: 600 }}
+                sx={{ pb: 0 }}
+              />
+              <CardContent>
+                <ChipInput
+                  mealType={mealType}
+                  items={items[mealType] ?? []}
+                  inputValue={inputs[mealType] ?? ''}
+                  onAdd={handleAdd}
+                  onDelete={handleDelete}
+                  onInputChange={handleInputChange}
+                />
+              </CardContent>
+              <CardActions sx={{ px: 2, pb: 2, pt: 0 }}>
+                <Button
+                  variant="contained"
+                  onClick={() => handleSave(mealType)}
+                  disabled={!!saving[mealType]}
+                  fullWidth
+                  size="large"
+                >
+                  {saving[mealType]
+                    ? <CircularProgress size={22} color="inherit" />
+                    : 'Save Menu'}
+                </Button>
+              </CardActions>
+            </Card>
+          ))}
+        </Stack>
+      )}
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          severity={snackbar.severity}
+          onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Container>
+  );
+}

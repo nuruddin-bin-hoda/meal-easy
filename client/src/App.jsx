@@ -4,6 +4,8 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard';
 import MealTogglePage from './pages/MealTogglePage';
+import MenuPage from './pages/MenuPage';
+import SetMenuPage from './pages/SetMenuPage';
 
 export default function App() {
   return (
@@ -23,6 +25,22 @@ export default function App() {
         element={
           <PrivateRoute>
             <MealTogglePage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/menu"
+        element={
+          <PrivateRoute>
+            <MenuPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/admin/menu"
+        element={
+          <PrivateRoute>
+            <SetMenuPage />
           </PrivateRoute>
         }
       />
