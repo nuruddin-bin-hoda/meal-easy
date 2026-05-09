@@ -30,6 +30,7 @@ app.use('/api/v1', require('./routes/menuRoutes'));
 app.use('/api/v1', require('./routes/chefRoutes'));
 app.use('/api/v1', require('./routes/purchaseRoutes'));
 app.use('/api/v1', require('./routes/otherCostRoutes'));
+app.use('/api/v1', require('./routes/depositRoutes'));
 
 app.use(errorHandler);
 
