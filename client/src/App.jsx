@@ -3,6 +3,7 @@ import PrivateRoute from './components/PrivateRoute';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard';
+import MealTogglePage from './pages/MealTogglePage';
 
 export default function App() {
   return (
@@ -14,6 +15,14 @@ export default function App() {
         element={
           <PrivateRoute>
             <Dashboard />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/meals"
+        element={
+          <PrivateRoute>
+            <MealTogglePage />
           </PrivateRoute>
         }
       />
