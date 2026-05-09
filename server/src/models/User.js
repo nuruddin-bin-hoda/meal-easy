@@ -15,6 +15,7 @@ const userSchema = new mongoose.Schema({
       auth: String,
     },
   },
+  passwordHash: { type: String, required: true },
   mealBlocked: { type: Boolean, default: false },
   deletedAt: Date,
 }, { timestamps: true });

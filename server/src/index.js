@@ -21,6 +21,8 @@ app.use(cookieParser());
 
 app.get('/api/v1/health', (_req, res) => res.json({ status: 'ok' }));
 
+app.use('/api/v1/auth', require('./routes/authRoutes'));
+
 app.use(errorHandler);
 
 app.listen(PORT, () => {
