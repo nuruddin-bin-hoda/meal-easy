@@ -144,3 +144,6 @@ vite.config.ts.timestamp-*
 
 # project plan
 meal-easy-dev-plan.md
+
+# Docker bind-mount data (MongoDB data, uploaded files)
+data/

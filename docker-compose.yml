@@ -1,43 +1,56 @@
 services:
+
+  # ── MongoDB ────────────────────────────────────────────────────────────────
   mongo:
     image: mongo:7
-    restart: unless-stopped
-    ports:
-      - "27017:27017"
+    restart: always
     volumes:
-      - mongo_data:/data/db
+      # Persist data on the host so it survives container recreations.
+      # The ./data/mongo directory is created automatically by Docker.
+      - ./data/mongo:/data/db
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
-      retries: 3
+      retries: 5
+      start_period: 20s
 
+  # ── Node.js API server ─────────────────────────────────────────────────────
   server:
-    build: ./server
-    restart: unless-stopped
+    build:
+      context: ./server
+    restart: always
     ports:
+      # Expose for direct debugging. Remove in strict production.
       - "5001:5001"
     depends_on:
       mongo:
         condition: service_healthy
+    environment:
+      NODE_ENV: production
     env_file:
       - .env
+    volumes:
+      # Persist user/chef photo uploads across container restarts.
+      - ./data/uploads:/app/uploads
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5001/api/v1/health"]
-      interval: 10s
+      test: ["CMD", "wget", "-qO-", "http://localhost:5001/api/v1/health"]
+      interval: 15s
       timeout: 5s
       retries: 3
+      start_period: 10s
 
+  # ── React client (Nginx) ───────────────────────────────────────────────────
   client:
     build:
       context: ./client
       args:
-        VITE_API_URL: http://localhost:5001/api/v1
-    restart: unless-stopped
+        # Nginx proxies /api/* to the server container internally,
+        # so the built JS only needs the relative base path.
+        VITE_API_URL: /api/v1
+    restart: always
     ports:
-      - "3000:80"
+      - "80:80"
     depends_on:
-      - server
-
-volumes:
-  mongo_data:
+      server:
+        condition: service_healthy
