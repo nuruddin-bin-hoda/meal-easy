@@ -13,6 +13,8 @@ import BillingPage from './pages/BillingPage';
 import StockPage from './pages/StockPage';
 import ChefsPage from './pages/ChefsPage';
 import ChefProfilePage from './pages/ChefProfilePage';
+import ReportPage from './pages/ReportPage';
+import AuditLogsPage from './pages/AuditLogsPage';
 
 export default function App() {
   return (
@@ -104,6 +106,22 @@ export default function App() {
         element={
           <PrivateRoute>
             <ChefProfilePage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/reports/:month"
+        element={
+          <PrivateRoute>
+            <ReportPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/audit-logs"
+        element={
+          <PrivateRoute>
+            <AuditLogsPage />
           </PrivateRoute>
         }
       />

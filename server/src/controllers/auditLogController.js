@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { AuditLog } = require('../models');
+const { AuditLog, User, Chef } = require('../models');
 
 const ADMIN_ROLES = ['admin', 'superadmin'];
 
@@ -34,8 +34,32 @@ const getLogs = async (req, res) => {
     AuditLog.countDocuments(filter),
   ]);
 
+  // Bulk-resolve actor names (actors can be User or Chef)
+  const userActorIds = [];
+  const chefActorIds = [];
+  for (const l of logs) {
+    if (!l.actorId) continue;
+    if (l.actorRole === 'chef') chefActorIds.push(l.actorId);
+    else userActorIds.push(l.actorId);
+  }
+
+  const [userDocs, chefDocs] = await Promise.all([
+    userActorIds.length > 0 ? User.find({ _id: { $in: userActorIds } }).select('name') : Promise.resolve([]),
+    chefActorIds.length > 0 ? Chef.find({ _id: { $in: chefActorIds } }).select('name') : Promise.resolve([]),
+  ]);
+
+  const nameMap = new Map([
+    ...userDocs.map((u) => [u._id.toString(), u.name]),
+    ...chefDocs.map((c) => [c._id.toString(), c.name]),
+  ]);
+
+  const enrichedLogs = logs.map((l) => ({
+    ...l.toObject(),
+    actorName: l.actorId ? (nameMap.get(l.actorId.toString()) ?? '—') : '—',
+  }));
+
   res.json({
-    data: logs,
+    data: enrichedLogs,
     page: pageNum,
     limit: limitNum,
     total,
