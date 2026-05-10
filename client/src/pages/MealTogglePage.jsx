@@ -6,6 +6,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import { useTranslation, Trans } from 'react-i18next';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 
@@ -23,7 +24,7 @@ function formatDate(dateStr) {
   });
 }
 
-function MealCard({ toggle, menuItems, disabled, saving, onToggle, onGuestStep }) {
+function MealCard({ toggle, menuItems, disabled, saving, onToggle, onGuestStep, guestMealsLabel }) {
   return (
     <Card elevation={2}>
       <CardContent sx={{ pb: '16px !important' }}>
@@ -57,7 +58,7 @@ function MealCard({ toggle, menuItems, disabled, saving, onToggle, onGuestStep }
             <Divider sx={{ my: 1.5 }} />
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <Typography variant="body2" color="text.secondary">
-                Guest meals
+                {guestMealsLabel}
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 'auto' }}>
                 <IconButton
@@ -92,6 +93,7 @@ function MealCard({ toggle, menuItems, disabled, saving, onToggle, onGuestStep }
 
 export default function MealTogglePage() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [toggles, setToggles] = useState([]);
   const [menus, setMenus] = useState({});
   const [tomorrowDate, setTomorrowDate] = useState('');
@@ -112,9 +114,9 @@ export default function MealTogglePage() {
       setMenus(menuRes.data.menus ?? {});
       setCutoffPassed(isCutoffPassed(settingsRes.data.cutoffTime));
     }).catch(() => {
-      setSnackbar({ open: true, message: 'Failed to load meal data', severity: 'error' });
+      setSnackbar({ open: true, message: t('meal.failedToLoad'), severity: 'error' });
     }).finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   const save = useCallback(async (mealType, isOn, guestCount) => {
     setSaving(s => ({ ...s, [mealType]: true }));
@@ -123,17 +125,17 @@ export default function MealTogglePage() {
       setToggles(prev => prev.map(t =>
         t.mealType === mealType ? { ...t, isOn: data.isOn, guestCount: data.guestCount } : t,
       ));
-      setSnackbar({ open: true, message: 'Saved', severity: 'success' });
+      setSnackbar({ open: true, message: t('meal.saved'), severity: 'success' });
     } catch (err) {
       setSnackbar({
         open: true,
-        message: err.response?.data?.message ?? 'Failed to save',
+        message: err.response?.data?.message ?? t('meal.failedToLoad'),
         severity: 'error',
       });
     } finally {
       setSaving(s => ({ ...s, [mealType]: false }));
     }
-  }, []);
+  }, [t]);
 
   const handleToggle = useCallback((mealType, isOn) => {
     const current = toggles.find(t => t.mealType === mealType);
@@ -168,7 +170,7 @@ export default function MealTogglePage() {
   return (
     <Container maxWidth="sm" sx={{ py: 3, px: 2 }}>
       <Typography variant="h5" fontWeight={700} gutterBottom>
-        Tomorrow's Meals
+        {t('meal.tomorrowMeals')}
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         {formatDate(tomorrowDate)}
@@ -176,13 +178,13 @@ export default function MealTogglePage() {
 
       {user?.mealBlocked && (
         <Alert severity="error" sx={{ mb: 2 }}>
-          Your meal access is blocked
+          {t('dashboard.mealBlockedShort')}
         </Alert>
       )}
 
       {cutoffPassed && !user?.mealBlocked && (
         <Alert severity="warning" icon={<LockOutlinedIcon />} sx={{ mb: 2 }}>
-          Cutoff passed. Toggles are locked.
+          {t('meal.cutoffPassed')}
         </Alert>
       )}
 
@@ -196,29 +198,26 @@ export default function MealTogglePage() {
             saving={!!saving[toggle.mealType]}
             onToggle={handleToggle}
             onGuestStep={handleGuestStep}
+            guestMealsLabel={t('dashboard.guestMeals')}
           />
         ))}
 
         {toggles.length === 0 && (
-          <Alert severity="info">No meal types have been configured yet.</Alert>
+          <Alert severity="info">{t('meal.noMealTypes')}</Alert>
         )}
       </Stack>
 
       <Card elevation={1} sx={{ mt: 3 }}>
         <CardContent sx={{ pb: '16px !important' }}>
           <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-            Summary
+            {t('meal.summary')}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            You have{' '}
-            <Box component="span" sx={{ fontWeight: 700, color: 'text.primary' }}>
-              {mealOnCount} meal{mealOnCount !== 1 ? 's' : ''}
-            </Box>{' '}
-            and{' '}
-            <Box component="span" sx={{ fontWeight: 700, color: 'text.primary' }}>
-              {guestTotal} guest meal{guestTotal !== 1 ? 's' : ''}
-            </Box>{' '}
-            scheduled for tomorrow.
+            <Trans
+              i18nKey="meal.summaryText"
+              values={{ meals: mealOnCount, guests: guestTotal }}
+              components={{ b: <Box component="span" sx={{ fontWeight: 700, color: 'text.primary' }} /> }}
+            />
           </Typography>
         </CardContent>
       </Card>

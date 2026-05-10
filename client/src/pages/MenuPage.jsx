@@ -6,6 +6,7 @@ import {
   Stack, TextField, Typography,
 } from '@mui/material';
 import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
+import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 
 const todayPlusOne = () => format(addDays(new Date(), 1), 'yyyy-MM-dd');
@@ -18,6 +19,7 @@ function formatDate(dateStr) {
 }
 
 export default function MenuPage() {
+  const { t } = useTranslation();
   const [date, setDate] = useState(todayPlusOne);
   const [menus, setMenus] = useState({});
   const [loading, setLoading] = useState(false);
@@ -36,7 +38,7 @@ export default function MenuPage() {
   return (
     <Container maxWidth="sm" sx={{ py: 3, px: 2 }}>
       <Typography variant="h5" fontWeight={700} gutterBottom>
-        Menu
+        {t('menu.title')}
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         {formatDate(date)}
@@ -44,7 +46,7 @@ export default function MenuPage() {
 
       <TextField
         type="date"
-        label="Date"
+        label={t('menu.date')}
         value={date}
         onChange={e => setDate(e.target.value)}
         fullWidth
@@ -60,7 +62,7 @@ export default function MenuPage() {
 
       {!loading && mealTypes.length === 0 && (
         <Alert severity="info" icon={<RestaurantMenuIcon />}>
-          No menu has been set for this date.
+          {t('menu.noMenuForDate')}
         </Alert>
       )}
 
@@ -76,7 +78,7 @@ export default function MenuPage() {
               <CardContent sx={{ pt: 1, pb: '16px !important' }}>
                 {menus[mealType].length === 0 ? (
                   <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                    No items listed
+                    {t('menu.noItems')}
                   </Typography>
                 ) : (
                   <List dense disablePadding>

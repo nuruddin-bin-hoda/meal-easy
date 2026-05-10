@@ -4,12 +4,14 @@ import {
   Box, Card, CardContent, TextField, Button, Typography,
   Alert, CircularProgress, Link,
 } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [form, setForm] = useState({ phone: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -25,7 +27,7 @@ export default function LoginPage() {
       login(res.data.user);
       navigate('/dashboard', { replace: true });
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      setError(err.response?.data?.message || t('auth.loginFailed'));
     } finally {
       setLoading(false);
     }
@@ -35,14 +37,14 @@ export default function LoginPage() {
     <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 }}>
       <Card sx={{ width: '100%', maxWidth: 400 }}>
         <CardContent sx={{ p: 4 }}>
-          <Typography variant="h5" fontWeight={700} mb={1}>Meal Easy</Typography>
-          <Typography variant="body2" color="text.secondary" mb={3}>Sign in to your account</Typography>
+          <Typography variant="h5" fontWeight={700} mb={1}>{t('appName')}</Typography>
+          <Typography variant="body2" color="text.secondary" mb={3}>{t('auth.signInSubtitle')}</Typography>
 
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
           <Box component="form" onSubmit={handleSubmit} noValidate>
             <TextField
-              label="Phone"
+              label={t('auth.phone')}
               name="phone"
               value={form.phone}
               onChange={handleChange}
@@ -52,7 +54,7 @@ export default function LoginPage() {
               sx={{ mb: 2 }}
             />
             <TextField
-              label="Password"
+              label={t('auth.password')}
               name="password"
               type="password"
               value={form.password}
@@ -69,13 +71,13 @@ export default function LoginPage() {
               disabled={loading}
               size="large"
             >
-              {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
+              {loading ? <CircularProgress size={24} color="inherit" /> : t('auth.signIn')}
             </Button>
           </Box>
 
           <Typography variant="body2" align="center" mt={3}>
-            No account?{' '}
-            <Link component={RouterLink} to="/register">Register</Link>
+            {t('auth.noAccount')}{' '}
+            <Link component={RouterLink} to="/register">{t('auth.register')}</Link>
           </Typography>
         </CardContent>
       </Card>

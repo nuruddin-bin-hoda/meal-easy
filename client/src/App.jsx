@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import PrivateRoute from './components/PrivateRoute';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -18,6 +20,15 @@ import AuditLogsPage from './pages/AuditLogsPage';
 import NotificationsPage from './pages/NotificationsPage';
 
 export default function App() {
+  const { i18n } = useTranslation();
+
+  useEffect(() => {
+    const isBn = (i18n.language || 'en').startsWith('bn');
+    document.body.style.fontFamily = isBn
+      ? "'Hind Siliguri', sans-serif"
+      : "'Roboto', sans-serif";
+  }, [i18n.language]);
+
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />

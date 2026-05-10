@@ -7,6 +7,7 @@ import {
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 
@@ -16,6 +17,7 @@ const EMPTY_FORM = { billingMonth: currentMonth(), description: '', amount: '' }
 export default function OtherCostsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [form, setForm] = useState(EMPTY_FORM);
   const [viewMonth, setViewMonth] = useState(currentMonth());
@@ -47,11 +49,11 @@ export default function OtherCostsPage() {
         cycleRes.status === 'fulfilled' ? !!cycleRes.value.data.billingCycle?.isLocked : false,
       );
     } catch {
-      notify('Failed to load data', 'error');
+      notify(t('costs.failedToLoad'), 'error');
     } finally {
       setLoading(false);
     }
-  }, [viewMonth]);
+  }, [viewMonth, t]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -67,10 +69,10 @@ export default function OtherCostsPage() {
         amount: Number(form.amount),
       });
       setForm(EMPTY_FORM);
-      notify('Cost recorded');
+      notify(t('costs.recorded'));
       if (form.billingMonth === viewMonth) loadData();
     } catch (err) {
-      notify(err.response?.data?.message ?? 'Failed to record cost', 'error');
+      notify(err.response?.data?.message ?? t('costs.failedToRecord'), 'error');
     } finally {
       setSubmitting(false);
     }
@@ -80,10 +82,10 @@ export default function OtherCostsPage() {
     setDeleting(id);
     try {
       await api.delete(`/costs/${id}`);
-      notify('Cost deleted');
+      notify(t('costs.deleted'));
       loadData();
     } catch (err) {
-      notify(err.response?.data?.message ?? 'Failed to delete', 'error');
+      notify(err.response?.data?.message ?? t('costs.failedToDelete'), 'error');
     } finally {
       setDeleting(null);
     }
@@ -93,32 +95,32 @@ export default function OtherCostsPage() {
 
   return (
     <Container maxWidth="md" sx={{ py: 3 }}>
-      <Typography variant="h5" fontWeight={700} gutterBottom>Other Costs</Typography>
+      <Typography variant="h5" fontWeight={700} gutterBottom>{t('costs.title')}</Typography>
 
       <Card elevation={2} sx={{ mb: 3 }}>
-        <CardHeader title="Record Other Cost" titleTypographyProps={{ variant: 'h6' }} sx={{ pb: 0 }} />
+        <CardHeader title={t('costs.recordCost')} titleTypographyProps={{ variant: 'h6' }} sx={{ pb: 0 }} />
         <CardContent>
           <Box component="form" onSubmit={handleSubmit}>
             <Stack spacing={2}>
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                 <TextField
-                  label="Billing Month" value={form.billingMonth} required
+                  label={t('costs.billingMonth')} value={form.billingMonth} required
                   onChange={handleField('billingMonth')} placeholder="YYYY-MM"
                   slotProps={{ inputLabel: { shrink: true } }} sx={{ width: 160 }}
                 />
                 <TextField
-                  label="Description" value={form.description} required
+                  label={t('costs.description')} value={form.description} required
                   onChange={handleField('description')} sx={{ flex: 1 }}
                 />
                 <TextField
-                  label="Amount" value={form.amount} type="number" required
+                  label={t('costs.amount')} value={form.amount} type="number" required
                   slotProps={{ htmlInput: { min: 0, step: 'any' } }}
                   onChange={handleField('amount')} sx={{ width: 140 }}
                 />
               </Stack>
               <Box>
                 <Button type="submit" variant="contained" disabled={submitting}>
-                  {submitting ? <CircularProgress size={20} color="inherit" /> : 'Add Cost'}
+                  {submitting ? <CircularProgress size={20} color="inherit" /> : t('costs.addCost')}
                 </Button>
               </Box>
             </Stack>
@@ -128,12 +130,12 @@ export default function OtherCostsPage() {
 
       <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
         <TextField
-          label="View Month" value={viewMonth} size="small"
+          label={t('costs.viewMonth')} value={viewMonth} size="small"
           onChange={e => setViewMonth(e.target.value)}
           placeholder="YYYY-MM" slotProps={{ inputLabel: { shrink: true } }}
           sx={{ width: 160 }}
         />
-        {isLocked && <Chip label="Billing Locked" color="warning" size="small" />}
+        {isLocked && <Chip label={t('costs.billingLocked')} color="warning" size="small" />}
       </Stack>
 
       {loading ? (
@@ -143,16 +145,16 @@ export default function OtherCostsPage() {
           <Table size="small">
             <TableHead>
               <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: 'action.hover' } }}>
-                <TableCell>Description</TableCell>
-                <TableCell align="right">Amount</TableCell>
-                <TableCell align="center" sx={{ width: 64 }}>Delete</TableCell>
+                <TableCell>{t('costs.description')}</TableCell>
+                <TableCell align="right">{t('costs.amount')}</TableCell>
+                <TableCell align="center" sx={{ width: 64 }}>{t('common.delete')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {costs.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={3} align="center" sx={{ py: 4, color: 'text.secondary' }}>
-                    No costs for {viewMonth}
+                    {t('costs.noCosts', { month: viewMonth })}
                   </TableCell>
                 </TableRow>
               ) : costs.map(c => (
@@ -175,7 +177,7 @@ export default function OtherCostsPage() {
               {costs.length > 0 && (
                 <TableRow>
                   <TableCell align="right" sx={{ fontWeight: 700, borderTop: 2, borderColor: 'divider' }}>
-                    Month Total
+                    {t('costs.monthTotal')}
                   </TableCell>
                   <TableCell align="right" sx={{ fontWeight: 700, borderTop: 2, borderColor: 'divider' }}>
                     ৳{monthTotal.toFixed(2)}

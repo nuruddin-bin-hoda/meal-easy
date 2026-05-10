@@ -6,6 +6,7 @@ import {
   TableHead, TableRow, TextField, Typography,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 
@@ -15,6 +16,7 @@ const EMPTY_FORM = { userId: '', amount: '', date: today(), note: '' };
 export default function DepositsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [users, setUsers] = useState([]);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -48,11 +50,11 @@ export default function DepositsPage() {
       const res = await api.get(`/deposits?${params}`);
       setDeposits(res.data.deposits ?? []);
     } catch {
-      notify('Failed to load deposits', 'error');
+      notify(t('deposits.failedToLoad'), 'error');
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [filters, t]);
 
   useEffect(() => { loadDeposits(); }, [loadDeposits]);
 
@@ -69,10 +71,10 @@ export default function DepositsPage() {
         note: form.note || undefined,
       });
       setForm(EMPTY_FORM);
-      notify('Deposit recorded');
+      notify(t('deposits.recorded'));
       loadDeposits();
     } catch (err) {
-      notify(err.response?.data?.message ?? 'Failed to record deposit', 'error');
+      notify(err.response?.data?.message ?? t('deposits.failedToRecord'), 'error');
     } finally {
       setSubmitting(false);
     }
@@ -80,39 +82,39 @@ export default function DepositsPage() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
-      <Typography variant="h5" fontWeight={700} gutterBottom>Deposits</Typography>
+      <Typography variant="h5" fontWeight={700} gutterBottom>{t('deposits.title')}</Typography>
 
       <Card elevation={2} sx={{ mb: 3 }}>
-        <CardHeader title="Record Deposit" titleTypographyProps={{ variant: 'h6' }} sx={{ pb: 0 }} />
+        <CardHeader title={t('deposits.recordDeposit')} titleTypographyProps={{ variant: 'h6' }} sx={{ pb: 0 }} />
         <CardContent>
           <Box component="form" onSubmit={handleSubmit}>
             <Stack spacing={2}>
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                 <TextField
-                  select label="User" value={form.userId} required
+                  select label={t('common.user')} value={form.userId} required
                   onChange={handleField('userId')} sx={{ minWidth: 200 }}
                   slotProps={{ inputLabel: { shrink: true } }}
                 >
                   {users.map(u => <MenuItem key={u._id} value={u._id}>{u.name}</MenuItem>)}
                 </TextField>
                 <TextField
-                  label="Amount" value={form.amount} type="number" required
+                  label={t('common.amount')} value={form.amount} type="number" required
                   slotProps={{ htmlInput: { min: 0.01, step: 'any' } }}
                   onChange={handleField('amount')} sx={{ flex: 1 }}
                 />
                 <TextField
-                  label="Date" type="date" value={form.date} required
+                  label={t('common.date')} type="date" value={form.date} required
                   onChange={handleField('date')}
                   slotProps={{ inputLabel: { shrink: true } }} sx={{ flex: 1 }}
                 />
                 <TextField
-                  label="Note (optional)" value={form.note}
+                  label={t('deposits.noteOptional')} value={form.note}
                   onChange={handleField('note')} sx={{ flex: 2 }}
                 />
               </Stack>
               <Box>
                 <Button type="submit" variant="contained" disabled={submitting}>
-                  {submitting ? <CircularProgress size={20} color="inherit" /> : 'Record Deposit'}
+                  {submitting ? <CircularProgress size={20} color="inherit" /> : t('deposits.recordDeposit')}
                 </Button>
               </Box>
             </Stack>
@@ -124,19 +126,19 @@ export default function DepositsPage() {
         <CardContent sx={{ py: '12px !important' }}>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
             <TextField
-              select label="User" value={filters.userId} size="small" sx={{ minWidth: 180 }}
+              select label={t('common.user')} value={filters.userId} size="small" sx={{ minWidth: 180 }}
               onChange={e => setFilters(f => ({ ...f, userId: e.target.value }))}
             >
-              <MenuItem value="">All users</MenuItem>
+              <MenuItem value="">{t('deposits.allUsers')}</MenuItem>
               {users.map(u => <MenuItem key={u._id} value={u._id}>{u.name}</MenuItem>)}
             </TextField>
             <TextField
-              label="From" type="date" value={filters.startDate} size="small"
+              label={t('common.from')} type="date" value={filters.startDate} size="small"
               onChange={e => setFilters(f => ({ ...f, startDate: e.target.value }))}
               slotProps={{ inputLabel: { shrink: true } }}
             />
             <TextField
-              label="To" type="date" value={filters.endDate} size="small"
+              label={t('common.to')} type="date" value={filters.endDate} size="small"
               onChange={e => setFilters(f => ({ ...f, endDate: e.target.value }))}
               slotProps={{ inputLabel: { shrink: true } }}
             />
@@ -151,18 +153,18 @@ export default function DepositsPage() {
           <Table size="small">
             <TableHead>
               <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: 'action.hover' } }}>
-                <TableCell>Date</TableCell>
-                <TableCell>User</TableCell>
-                <TableCell align="right">Amount</TableCell>
-                <TableCell>Note</TableCell>
-                <TableCell>Recorded by</TableCell>
+                <TableCell>{t('common.date')}</TableCell>
+                <TableCell>{t('common.user')}</TableCell>
+                <TableCell align="right">{t('common.amount')}</TableCell>
+                <TableCell>{t('common.note')}</TableCell>
+                <TableCell>{t('deposits.recordedBy')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {deposits.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} align="center" sx={{ py: 4, color: 'text.secondary' }}>
-                    No deposits found
+                    {t('deposits.noDeposits')}
                   </TableCell>
                 </TableRow>
               ) : deposits.map(d => (

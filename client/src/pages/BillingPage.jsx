@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 
@@ -27,6 +28,7 @@ function StatCard({ label, value }) {
 export default function BillingPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [month, setMonth] = useState(currentMonth());
   const [preview, setPreview] = useState(null);
@@ -46,7 +48,6 @@ export default function BillingPage() {
     }
   }, [user, navigate]);
 
-  // Load user name map once
   useEffect(() => {
     api.get('/users?limit=200').then(res => {
       const map = {};
@@ -63,7 +64,6 @@ export default function BillingPage() {
     setLockedBills([]);
 
     try {
-      // Try to fetch existing cycle
       const cycleRes = await api.get(`/billing/${month}`).catch(err => {
         if (err.response?.status === 404) return null;
         throw err;
@@ -74,16 +74,15 @@ export default function BillingPage() {
         setLockedBills(cycleRes.data.userBills ?? []);
       } else {
         if (cycleRes) setBillingCycle(cycleRes.data.billingCycle);
-        // Load live preview
         const previewRes = await api.get(`/billing/${month}/preview`);
         setPreview(previewRes.data);
       }
     } catch {
-      notify('Failed to load billing data', 'error');
+      notify(t('billing.failedToLoad'), 'error');
     } finally {
       setLoading(false);
     }
-  }, [month]);
+  }, [month, t]);
 
   useEffect(() => { loadBilling(); }, [loadBilling]);
 
@@ -92,10 +91,10 @@ export default function BillingPage() {
     setSubmitting(true);
     try {
       await api.post(`/billing/${month}/submit`);
-      notify('Billing submitted and locked');
+      notify(t('billing.submittedSuccess'));
       loadBilling();
     } catch (err) {
-      notify(err.response?.data?.message ?? 'Failed to submit billing', 'error');
+      notify(err.response?.data?.message ?? t('billing.failedToSubmit'), 'error');
     } finally {
       setSubmitting(false);
     }
@@ -110,15 +109,15 @@ export default function BillingPage() {
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
       <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>
-        <Typography variant="h5" fontWeight={700}>Billing</Typography>
+        <Typography variant="h5" fontWeight={700}>{t('billing.title')}</Typography>
         {isLocked && (
-          <Chip icon={<LockIcon />} label="Locked" color="warning" size="small" />
+          <Chip icon={<LockIcon />} label={t('billing.locked')} color="warning" size="small" />
         )}
       </Stack>
 
       <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>
         <TextField
-          label="Month" value={month} size="small"
+          label={t('common.month')} value={month} size="small"
           onChange={e => setMonth(e.target.value)}
           placeholder="YYYY-MM" slotProps={{ inputLabel: { shrink: true } }}
           sx={{ width: 160 }}
@@ -129,12 +128,12 @@ export default function BillingPage() {
             disabled={submitting}
             onClick={() => setConfirmOpen(true)}
           >
-            {submitting ? <CircularProgress size={20} color="inherit" /> : 'Submit Billing'}
+            {submitting ? <CircularProgress size={20} color="inherit" /> : t('billing.submitBilling')}
           </Button>
         )}
         {isLocked && billingCycle?.submittedAt && (
           <Typography variant="body2" color="text.secondary">
-            Submitted {format(new Date(billingCycle.submittedAt), 'dd MMM yyyy, HH:mm')}
+            {t('billing.submitted', { date: format(new Date(billingCycle.submittedAt), 'dd MMM yyyy, HH:mm') })}
           </Typography>
         )}
       </Stack>
@@ -143,42 +142,40 @@ export default function BillingPage() {
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 6 }}><CircularProgress /></Box>
       ) : (
         <>
-          {/* Summary cards */}
           {(data || isLocked) && (
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3 }} flexWrap="wrap">
               <StatCard
-                label="Meal Rate"
+                label={t('billing.mealRate')}
                 value={`৳${(isLocked ? billingCycle.mealRate : data.mealRate).toFixed(2)}`}
               />
               <StatCard
-                label="Other Cost / User"
+                label={t('billing.otherCostPerUser')}
                 value={`৳${(isLocked ? billingCycle.otherCostPerUser : data.otherCostPerUser).toFixed(2)}`}
               />
               <StatCard
-                label="Total Purchases"
+                label={t('billing.totalPurchases')}
                 value={`৳${(isLocked ? billingCycle.totalItemCost : data.totalItemCost).toFixed(2)}`}
               />
               <StatCard
-                label="Total Other Costs"
+                label={t('billing.totalOtherCosts')}
                 value={`৳${(isLocked ? billingCycle.totalOtherCost : data.totalOtherCost).toFixed(2)}`}
               />
               <StatCard
-                label="Total Meals"
+                label={t('billing.totalMeals')}
                 value={(isLocked ? billingCycle.totalMealCount : data.totalMealCount)}
               />
               <StatCard
-                label="Active Users"
+                label={t('billing.activeUsers')}
                 value={(isLocked ? billingCycle.activeUserCount : data.activeUserCount)}
               />
             </Stack>
           )}
 
-          {/* User bills table */}
           {(previewRows.length > 0 || lockedRows.length > 0) && (
             <Card elevation={2}>
               {!isLocked && (
                 <CardHeader
-                  title="Preview — not yet submitted"
+                  title={t('billing.previewNote')}
                   titleTypographyProps={{ variant: 'subtitle1', color: 'text.secondary' }}
                   sx={{ pb: 0 }}
                 />
@@ -187,12 +184,12 @@ export default function BillingPage() {
               <Table size="small">
                 <TableHead>
                   <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: 'action.hover' } }}>
-                    <TableCell>User</TableCell>
-                    <TableCell align="right">Meals</TableCell>
-                    <TableCell align="right">Guest Meals</TableCell>
-                    <TableCell align="right">Meal Cost</TableCell>
-                    <TableCell align="right">Other Share</TableCell>
-                    <TableCell align="right">Total Bill</TableCell>
+                    <TableCell>{t('billing.userCol')}</TableCell>
+                    <TableCell align="right">{t('billing.meals')}</TableCell>
+                    <TableCell align="right">{t('billing.guestMeals')}</TableCell>
+                    <TableCell align="right">{t('billing.mealCost')}</TableCell>
+                    <TableCell align="right">{t('billing.otherShare')}</TableCell>
+                    <TableCell align="right">{t('billing.totalBill')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -219,24 +216,22 @@ export default function BillingPage() {
           )}
 
           {!data && !isLocked && !loading && (
-            <Alert severity="info">No meal or cost data found for {month}.</Alert>
+            <Alert severity="info">{t('billing.noData', { month })}</Alert>
           )}
         </>
       )}
 
-      {/* Confirm submit dialog */}
       <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
-        <DialogTitle>Submit Billing for {month}?</DialogTitle>
+        <DialogTitle>{t('billing.confirmTitle', { month })}</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            This will lock the billing cycle. Purchases and other costs for this month
-            can no longer be modified after submission. This action cannot be undone.
+            {t('billing.confirmText')}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirmOpen(false)}>Cancel</Button>
+          <Button onClick={() => setConfirmOpen(false)}>{t('common.cancel')}</Button>
           <Button onClick={handleSubmit} variant="contained" color="error">
-            Submit &amp; Lock
+            {t('billing.submitAndLock')}
           </Button>
         </DialogActions>
       </Dialog>

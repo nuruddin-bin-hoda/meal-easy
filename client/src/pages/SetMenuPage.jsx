@@ -4,11 +4,12 @@ import {
   Alert, Box, Button, Card, CardActions, CardContent, CardHeader,
   Chip, CircularProgress, Container, Snackbar, Stack, TextField, Typography,
 } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 
 const todayPlusOne = () => format(addDays(new Date(), 1), 'yyyy-MM-dd');
 
-function ChipInput({ mealType, items, inputValue, onAdd, onDelete, onInputChange }) {
+function ChipInput({ mealType, items, inputValue, onAdd, onDelete, onInputChange, placeholder, helperText }) {
   const handleKeyDown = (e) => {
     if (e.key !== 'Enter') return;
     e.preventDefault();
@@ -34,16 +35,17 @@ function ChipInput({ mealType, items, inputValue, onAdd, onDelete, onInputChange
         value={inputValue}
         onChange={e => onInputChange(mealType, e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Type item and press Enter"
+        placeholder={placeholder}
         size="small"
         fullWidth
-        helperText="Press Enter to add"
+        helperText={helperText}
       />
     </Box>
   );
 }
 
 export default function SetMenuPage() {
+  const { t } = useTranslation();
   const [date, setDate] = useState(todayPlusOne);
   const [mealTypes, setMealTypes] = useState([]);
   const [items, setItems] = useState({});
@@ -60,9 +62,9 @@ export default function SetMenuPage() {
       setItems(Object.fromEntries(active.map(n => [n, []])));
       setInputs(Object.fromEntries(active.map(n => [n, ''])));
     }).catch(() => {
-      setSnackbar({ open: true, message: 'Failed to load settings', severity: 'error' });
+      setSnackbar({ open: true, message: t('menu.failedToLoadSettings'), severity: 'error' });
     }).finally(() => setLoadingSettings(false));
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (!mealTypes.length) return;
@@ -92,11 +94,11 @@ export default function SetMenuPage() {
     setSaving(s => ({ ...s, [mealType]: true }));
     try {
       await api.post('/menus', { date, mealType, items: items[mealType] ?? [] });
-      setSnackbar({ open: true, message: `${mealType} menu saved`, severity: 'success' });
+      setSnackbar({ open: true, message: t('menu.menuSaved', { mealType }), severity: 'success' });
     } catch (err) {
       setSnackbar({
         open: true,
-        message: err.response?.data?.message ?? 'Failed to save menu',
+        message: err.response?.data?.message ?? t('menu.failedToSave'),
         severity: 'error',
       });
     } finally {
@@ -115,12 +117,12 @@ export default function SetMenuPage() {
   return (
     <Container maxWidth="sm" sx={{ py: 3, px: 2 }}>
       <Typography variant="h5" fontWeight={700} gutterBottom>
-        Set Menu
+        {t('menu.setMenu')}
       </Typography>
 
       <TextField
         type="date"
-        label="Date"
+        label={t('menu.date')}
         value={date}
         onChange={e => setDate(e.target.value)}
         fullWidth
@@ -129,7 +131,7 @@ export default function SetMenuPage() {
       />
 
       {mealTypes.length === 0 && (
-        <Alert severity="info">No active meal types configured in settings.</Alert>
+        <Alert severity="info">{t('menu.noActiveMealTypes')}</Alert>
       )}
 
       {loadingMenus ? (
@@ -153,6 +155,8 @@ export default function SetMenuPage() {
                   onAdd={handleAdd}
                   onDelete={handleDelete}
                   onInputChange={handleInputChange}
+                  placeholder={t('menu.typeItemPrompt')}
+                  helperText={t('menu.pressEnterToAdd')}
                 />
               </CardContent>
               <CardActions sx={{ px: 2, pb: 2, pt: 0 }}>
@@ -165,7 +169,7 @@ export default function SetMenuPage() {
                 >
                   {saving[mealType]
                     ? <CircularProgress size={22} color="inherit" />
-                    : 'Save Menu'}
+                    : t('menu.saveMenu')}
                 </Button>
               </CardActions>
             </Card>

@@ -3,9 +3,11 @@ import {
   Alert, Box, Card, CardContent, Chip, CircularProgress, Container,
   Grid, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography,
 } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import api from '../../api/axios';
 
 export default function ChefDashboard() {
+  const { t } = useTranslation();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -13,9 +15,9 @@ export default function ChefDashboard() {
   useEffect(() => {
     api.get('/dashboard/chef')
       .then((res) => setData(res.data))
-      .catch(() => setError('Failed to load dashboard data.'))
+      .catch(() => setError(t('dashboard.failedToLoad')))
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   if (loading) {
     return (
@@ -35,15 +37,14 @@ export default function ChefDashboard() {
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
       <Typography variant="h5" fontWeight={700} gutterBottom>
-        Chef Dashboard
+        {t('dashboard.chefTitle')}
       </Typography>
 
       <Grid container spacing={2}>
 
-        {/* Today's menu + portion count cards */}
         {mealTypes.length === 0 ? (
           <Grid size={12}>
-            <Alert severity="info">No menu or meal data for today.</Alert>
+            <Alert severity="info">{t('dashboard.noMenuOrMealData')}</Alert>
           </Grid>
         ) : mealTypes.map((mealType) => {
           const items = menuMap[mealType] ?? [];
@@ -61,20 +62,18 @@ export default function ChefDashboard() {
                     {mealType}
                   </Typography>
 
-                  {/* Large portion count */}
                   <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75, my: 1 }}>
                     <Typography variant="h2" fontWeight={700} color="primary" lineHeight={1}>
                       {portions}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      portions
+                      {t('dashboard.portions')}
                     </Typography>
                   </Box>
 
-                  {/* Menu items */}
                   {items.length === 0 ? (
                     <Typography variant="body2" color="text.disabled">
-                      Menu not set
+                      {t('dashboard.menuNotSetShort')}
                     </Typography>
                   ) : (
                     <Stack direction="row" flexWrap="wrap" gap={0.5} sx={{ mt: 1 }}>
@@ -94,18 +93,18 @@ export default function ChefDashboard() {
           <Card elevation={2}>
             <CardContent>
               <Typography variant="subtitle1" fontWeight={700} gutterBottom>
-                Current Stock
+                {t('dashboard.currentStock')}
               </Typography>
               {stock.length === 0 ? (
-                <Alert severity="info">No stock items found.</Alert>
+                <Alert severity="info">{t('dashboard.noStockItemsFound')}</Alert>
               ) : (
                 <Table size="small">
                   <TableHead>
                     <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: 'action.hover' } }}>
-                      <TableCell>Item</TableCell>
-                      <TableCell align="right">Quantity</TableCell>
-                      <TableCell>Unit</TableCell>
-                      <TableCell align="center">Status</TableCell>
+                      <TableCell>{t('common.item')}</TableCell>
+                      <TableCell align="right">{t('common.quantity')}</TableCell>
+                      <TableCell>{t('common.unit')}</TableCell>
+                      <TableCell align="center">{t('common.status')}</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -129,8 +128,8 @@ export default function ChefDashboard() {
                         <TableCell>{item.unit}</TableCell>
                         <TableCell align="center">
                           {item.isLow
-                            ? <Chip label="Low" color="error" size="small" />
-                            : <Chip label="OK" color="success" size="small" />}
+                            ? <Chip label={t('stock.lowStock')} color="error" size="small" />
+                            : <Chip label={t('stock.ok')} color="success" size="small" />}
                         </TableCell>
                       </TableRow>
                     ))}

@@ -7,6 +7,7 @@ import {
   TableHead, TableRow, TextField, Tooltip, Typography,
 } from '@mui/material';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 
@@ -27,26 +28,11 @@ function SummaryCard({ label, value, color }) {
   );
 }
 
-function JsonBlock({ value }) {
-  if (value == null) return <Typography variant="body2" color="text.disabled">—</Typography>;
-  return (
-    <Box
-      component="pre"
-      sx={{
-        m: 0, p: 1.5, borderRadius: 1, bgcolor: 'action.hover',
-        fontSize: '0.75rem', fontFamily: 'monospace',
-        overflowX: 'auto', maxHeight: 200,
-      }}
-    >
-      {JSON.stringify(value, null, 2)}
-    </Box>
-  );
-}
-
 export default function ReportPage() {
   const { month } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   const isAdmin = ADMIN_ROLES.includes(user?.role);
 
@@ -72,15 +58,14 @@ export default function ReportPage() {
     setError('');
     api.get(`/reports/${userId}/${month}`)
       .then((res) => setData(res.data))
-      .catch((err) => setError(err.response?.data?.message ?? 'Failed to load report.'))
+      .catch((err) => setError(err.response?.data?.message ?? t('report.failedToLoad')))
       .finally(() => setLoading(false));
-  }, [userId, month]);
+  }, [userId, month, t]);
 
   const handleMonthChange = (e) => {
     navigate(`/reports/${e.target.value}`, { replace: true });
   };
 
-  // Collect all meal types present in attendance data
   const mealTypes = useMemo(() => {
     const seen = new Set();
     (data?.mealAttendance ?? []).forEach((day) =>
@@ -89,7 +74,6 @@ export default function ReportPage() {
     return [...seen].sort();
   }, [data]);
 
-  // Fast lookup: date → mealType → { isOn, guestCount }
   const attendanceLookup = useMemo(() => {
     const map = {};
     (data?.mealAttendance ?? []).forEach((day) => {
@@ -109,7 +93,6 @@ export default function ReportPage() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
-      {/* Controls bar */}
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
         spacing={2}
@@ -118,17 +101,17 @@ export default function ReportPage() {
         sx={{ mb: 3 }}
       >
         <Typography variant="h5" fontWeight={700}>
-          Monthly Report
+          {t('report.title')}
         </Typography>
 
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
           {isAdmin && (
             <TextField
-              select label="User" value={selectedUserId} size="small" sx={{ minWidth: 200 }}
+              select label={t('common.user')} value={selectedUserId} size="small" sx={{ minWidth: 200 }}
               onChange={(e) => setSelectedUserId(e.target.value)}
               slotProps={{ inputLabel: { shrink: true } }}
             >
-              <MenuItem value="">— select user —</MenuItem>
+              <MenuItem value="">{t('report.selectUser')}</MenuItem>
               {users.map((u) => (
                 <MenuItem key={u._id} value={u._id}>{u.name}</MenuItem>
               ))}
@@ -136,12 +119,12 @@ export default function ReportPage() {
           )}
 
           <TextField
-            label="Month" type="month" value={month ?? ''} size="small"
+            label={t('common.month')} type="month" value={month ?? ''} size="small"
             onChange={handleMonthChange}
             slotProps={{ inputLabel: { shrink: true } }}
           />
 
-          <Tooltip title="PDF download coming in Phase 7">
+          <Tooltip title={t('report.pdfComingSoon')}>
             <span>
               <Button
                 variant="outlined"
@@ -149,19 +132,17 @@ export default function ReportPage() {
                 disabled
                 size="small"
               >
-                Download PDF
+                {t('report.downloadPdf')}
               </Button>
             </span>
           </Tooltip>
         </Stack>
       </Stack>
 
-      {/* Admin: prompt to select user */}
       {isAdmin && !selectedUserId && (
-        <Alert severity="info">Select a user above to view their report.</Alert>
+        <Alert severity="info">{t('report.selectUserPrompt')}</Alert>
       )}
 
-      {/* Loading / Error */}
       {loading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}>
           <CircularProgress />
@@ -169,30 +150,27 @@ export default function ReportPage() {
       )}
       {error && <Alert severity="error">{error}</Alert>}
 
-      {/* Report body */}
       {data && !loading && (
         <>
-          {/* Preview banner */}
           {data.isPreview && (
             <Alert severity="warning" sx={{ mb: 2 }}>
-              Preview — billing for this month has not been finalised yet. Figures may change.
+              {t('report.previewBanner')}
             </Alert>
           )}
 
-          {/* User info header */}
           <Card elevation={0} variant="outlined" sx={{ mb: 3, px: 1 }}>
             <CardContent>
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3}>
                 <Box>
-                  <Typography variant="caption" color="text.secondary">Name</Typography>
+                  <Typography variant="caption" color="text.secondary">{t('common.name')}</Typography>
                   <Typography variant="h6" fontWeight={700}>{data.user.name}</Typography>
                 </Box>
                 <Box>
-                  <Typography variant="caption" color="text.secondary">Room</Typography>
+                  <Typography variant="caption" color="text.secondary">{t('common.room')}</Typography>
                   <Typography variant="h6" fontWeight={700}>{data.user.roomNumber}</Typography>
                 </Box>
                 <Box>
-                  <Typography variant="caption" color="text.secondary">Billing Month</Typography>
+                  <Typography variant="caption" color="text.secondary">{t('report.billingMonth')}</Typography>
                   <Typography variant="h6" fontWeight={700}>
                     {format(new Date(`${data.billingMonth}-01`), 'MMMM yyyy')}
                   </Typography>
@@ -201,20 +179,22 @@ export default function ReportPage() {
             </CardContent>
           </Card>
 
-          {/* Summary cards */}
           <Grid container spacing={2} sx={{ mb: 3 }}>
             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <SummaryCard label="Meal Rate" value={`৳${(data.mealRate ?? 0).toFixed(2)}/meal`} />
+              <SummaryCard
+                label={t('report.mealRate')}
+                value={`৳${(data.mealRate ?? 0).toFixed(2)}${t('common.perMealUnit')}`}
+              />
             </Grid>
             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <SummaryCard label="Total Meals" value={totalMeals} />
+              <SummaryCard label={t('report.totalMeals')} value={totalMeals} />
             </Grid>
             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <SummaryCard label="Total Bill" value={`৳${(data.totalBill ?? 0).toFixed(2)}`} />
+              <SummaryCard label={t('report.totalBill')} value={`৳${(data.totalBill ?? 0).toFixed(2)}`} />
             </Grid>
             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <SummaryCard
-                label="Closing Balance"
+                label={t('report.closingBalance')}
                 value={`৳${(data.closingBalance ?? 0).toFixed(2)}`}
                 color={data.closingBalance >= 0 ? 'success.main' : 'error.main'}
               />
@@ -225,22 +205,22 @@ export default function ReportPage() {
           <Card elevation={2} sx={{ mb: 3 }}>
             <CardContent>
               <Typography variant="subtitle1" fontWeight={700} gutterBottom>
-                Meal Attendance
+                {t('report.mealAttendance')}
               </Typography>
               {data.mealAttendance.length === 0 ? (
-                <Typography variant="body2" color="text.secondary">No attendance data for this month.</Typography>
+                <Typography variant="body2" color="text.secondary">{t('report.noAttendance')}</Typography>
               ) : (
                 <Box sx={{ overflowX: 'auto' }}>
                   <Table size="small">
                     <TableHead>
                       <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: 'action.hover' } }}>
-                        <TableCell>Date</TableCell>
+                        <TableCell>{t('common.date')}</TableCell>
                         {mealTypes.map((mt) => (
                           <TableCell key={mt} align="center" sx={{ textTransform: 'capitalize' }}>
                             {mt}
                           </TableCell>
                         ))}
-                        <TableCell align="center">Guests</TableCell>
+                        <TableCell align="center">{t('report.guestsCol')}</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -283,18 +263,17 @@ export default function ReportPage() {
             </CardContent>
           </Card>
 
-          {/* Cost breakdown + Deposits side by side */}
           <Grid container spacing={2} sx={{ mb: 3 }}>
             <Grid size={{ xs: 12, md: 5 }}>
               <Card elevation={2} sx={{ height: '100%' }}>
                 <CardContent>
                   <Typography variant="subtitle1" fontWeight={700} gutterBottom>
-                    Cost Breakdown
+                    {t('report.costBreakdown')}
                   </Typography>
                   <Stack spacing={1.5}>
                     {[
-                      { label: 'Meal cost', value: data.mealCost },
-                      { label: 'Other cost share', value: data.otherCostShare },
+                      { label: t('report.mealCost'), value: data.mealCost },
+                      { label: t('report.otherCostShare'), value: data.otherCostShare },
                     ].map(({ label, value }) => (
                       <Box key={label} sx={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Typography variant="body2" color="text.secondary">{label}</Typography>
@@ -303,7 +282,7 @@ export default function ReportPage() {
                     ))}
                     <Divider />
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" fontWeight={700}>Total Bill</Typography>
+                      <Typography variant="body2" fontWeight={700}>{t('report.totalBill')}</Typography>
                       <Typography variant="body2" fontWeight={700}>৳{(data.totalBill ?? 0).toFixed(2)}</Typography>
                     </Box>
                   </Stack>
@@ -315,17 +294,17 @@ export default function ReportPage() {
               <Card elevation={2} sx={{ height: '100%' }}>
                 <CardContent>
                   <Typography variant="subtitle1" fontWeight={700} gutterBottom>
-                    Deposits This Month
+                    {t('report.depositsThisMonth')}
                   </Typography>
                   {data.deposits.length === 0 ? (
-                    <Typography variant="body2" color="text.secondary">No deposits this month.</Typography>
+                    <Typography variant="body2" color="text.secondary">{t('report.noDeposits')}</Typography>
                   ) : (
                     <Table size="small">
                       <TableHead>
                         <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: 'action.hover' } }}>
-                          <TableCell>Date</TableCell>
-                          <TableCell align="right">Amount</TableCell>
-                          <TableCell>Note</TableCell>
+                          <TableCell>{t('common.date')}</TableCell>
+                          <TableCell align="right">{t('common.amount')}</TableCell>
+                          <TableCell>{t('common.note')}</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -348,17 +327,17 @@ export default function ReportPage() {
           <Card elevation={2}>
             <CardContent>
               <Typography variant="subtitle1" fontWeight={700} gutterBottom>
-                Balance Summary
+                {t('report.balanceSummary')}
               </Typography>
               <Stack spacing={1.5}>
                 {[
-                  { label: 'Opening Balance', value: data.openingBalance },
+                  { label: t('report.openingBalance'), value: data.openingBalance },
                   {
-                    label: `Deposits (${format(new Date(`${data.billingMonth}-01`), 'MMM yyyy')})`,
+                    label: t('report.depositsLabel', { month: format(new Date(`${data.billingMonth}-01`), 'MMM yyyy') }),
                     value: data.deposits.reduce((s, d) => s + d.amount, 0),
                     prefix: '+',
                   },
-                  { label: 'Total Bill', value: data.totalBill, prefix: '−' },
+                  { label: t('report.totalBill'), value: data.totalBill, prefix: '−' },
                 ].map(({ label, value, prefix }) => (
                   <Box key={label} sx={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Typography variant="body2" color="text.secondary">{label}</Typography>
@@ -369,7 +348,7 @@ export default function ReportPage() {
                 ))}
                 <Divider />
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body1" fontWeight={700}>Closing Balance</Typography>
+                  <Typography variant="body1" fontWeight={700}>{t('report.closingBalance')}</Typography>
                   <Typography
                     variant="body1"
                     fontWeight={700}

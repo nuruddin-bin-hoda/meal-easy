@@ -6,6 +6,7 @@ import {
   TableHead, TableRow, TextField, Typography,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 
@@ -15,6 +16,7 @@ const EMPTY_FORM = { buyerUserId: '', item: '', quantity: '', unit: '', price: '
 export default function PurchasesPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [users, setUsers] = useState([]);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -48,11 +50,11 @@ export default function PurchasesPage() {
       const res = await api.get(`/purchases?${params}`);
       setPurchases(res.data.purchases ?? []);
     } catch {
-      notify('Failed to load purchases', 'error');
+      notify(t('purchases.failedToLoad'), 'error');
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [filters, t]);
 
   useEffect(() => { loadPurchases(); }, [loadPurchases]);
 
@@ -71,10 +73,10 @@ export default function PurchasesPage() {
         date: form.date,
       });
       setForm(EMPTY_FORM);
-      notify('Purchase recorded');
+      notify(t('purchases.recorded'));
       loadPurchases();
     } catch (err) {
-      notify(err.response?.data?.message ?? 'Failed to record purchase', 'error');
+      notify(err.response?.data?.message ?? t('purchases.failedToRecord'), 'error');
     } finally {
       setSubmitting(false);
     }
@@ -84,50 +86,50 @@ export default function PurchasesPage() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
-      <Typography variant="h5" fontWeight={700} gutterBottom>Purchases</Typography>
+      <Typography variant="h5" fontWeight={700} gutterBottom>{t('purchases.title')}</Typography>
 
       <Card elevation={2} sx={{ mb: 3 }}>
-        <CardHeader title="Record Purchase" titleTypographyProps={{ variant: 'h6' }} sx={{ pb: 0 }} />
+        <CardHeader title={t('purchases.recordPurchase')} titleTypographyProps={{ variant: 'h6' }} sx={{ pb: 0 }} />
         <CardContent>
           <Box component="form" onSubmit={handleSubmit}>
             <Stack spacing={2}>
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                 <TextField
-                  select label="Buyer" value={form.buyerUserId} required
+                  select label={t('purchases.buyer')} value={form.buyerUserId} required
                   onChange={handleField('buyerUserId')} sx={{ minWidth: 200 }}
                   slotProps={{ inputLabel: { shrink: true } }}
                 >
                   {users.map(u => <MenuItem key={u._id} value={u._id}>{u.name}</MenuItem>)}
                 </TextField>
                 <TextField
-                  label="Item" value={form.item} required
+                  label={t('purchases.item')} value={form.item} required
                   onChange={handleField('item')} sx={{ flex: 1 }}
                 />
               </Stack>
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                 <TextField
-                  label="Quantity" value={form.quantity} type="number"
+                  label={t('purchases.quantity')} value={form.quantity} type="number"
                   slotProps={{ htmlInput: { min: 0, step: 'any' } }}
                   onChange={handleField('quantity')} sx={{ flex: 1 }}
                 />
                 <TextField
-                  label="Unit" value={form.unit}
+                  label={t('purchases.unit')} value={form.unit}
                   onChange={handleField('unit')} sx={{ flex: 1 }}
                 />
                 <TextField
-                  label="Price" value={form.price} type="number" required
+                  label={t('purchases.price')} value={form.price} type="number" required
                   slotProps={{ htmlInput: { min: 0, step: 'any' } }}
                   onChange={handleField('price')} sx={{ flex: 1 }}
                 />
                 <TextField
-                  label="Date" type="date" value={form.date} required
+                  label={t('purchases.date')} type="date" value={form.date} required
                   onChange={handleField('date')}
                   slotProps={{ inputLabel: { shrink: true } }} sx={{ flex: 1 }}
                 />
               </Stack>
               <Box>
                 <Button type="submit" variant="contained" disabled={submitting}>
-                  {submitting ? <CircularProgress size={20} color="inherit" /> : 'Record Purchase'}
+                  {submitting ? <CircularProgress size={20} color="inherit" /> : t('purchases.recordPurchase')}
                 </Button>
               </Box>
             </Stack>
@@ -139,20 +141,20 @@ export default function PurchasesPage() {
         <CardContent sx={{ py: '12px !important' }}>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
             <TextField
-              label="From" type="date" value={filters.startDate} size="small"
+              label={t('purchases.from')} type="date" value={filters.startDate} size="small"
               onChange={e => setFilters(f => ({ ...f, startDate: e.target.value }))}
               slotProps={{ inputLabel: { shrink: true } }}
             />
             <TextField
-              label="To" type="date" value={filters.endDate} size="small"
+              label={t('purchases.to')} type="date" value={filters.endDate} size="small"
               onChange={e => setFilters(f => ({ ...f, endDate: e.target.value }))}
               slotProps={{ inputLabel: { shrink: true } }}
             />
             <TextField
-              select label="Buyer" value={filters.buyerUserId} size="small" sx={{ minWidth: 160 }}
+              select label={t('purchases.buyer')} value={filters.buyerUserId} size="small" sx={{ minWidth: 160 }}
               onChange={e => setFilters(f => ({ ...f, buyerUserId: e.target.value }))}
             >
-              <MenuItem value="">All buyers</MenuItem>
+              <MenuItem value="">{t('purchases.allBuyers')}</MenuItem>
               {users.map(u => <MenuItem key={u._id} value={u._id}>{u.name}</MenuItem>)}
             </TextField>
           </Stack>
@@ -166,19 +168,19 @@ export default function PurchasesPage() {
           <Table size="small">
             <TableHead>
               <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: 'action.hover' } }}>
-                <TableCell>Date</TableCell>
-                <TableCell>Buyer</TableCell>
-                <TableCell>Item</TableCell>
-                <TableCell>Qty</TableCell>
-                <TableCell>Unit</TableCell>
-                <TableCell align="right">Price</TableCell>
+                <TableCell>{t('purchases.date')}</TableCell>
+                <TableCell>{t('purchases.buyer')}</TableCell>
+                <TableCell>{t('purchases.item')}</TableCell>
+                <TableCell>{t('common.qty')}</TableCell>
+                <TableCell>{t('purchases.unit')}</TableCell>
+                <TableCell align="right">{t('purchases.price')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {purchases.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} align="center" sx={{ py: 4, color: 'text.secondary' }}>
-                    No purchases found
+                    {t('purchases.noPurchases')}
                   </TableCell>
                 </TableRow>
               ) : purchases.map(p => (
@@ -194,7 +196,7 @@ export default function PurchasesPage() {
               {purchases.length > 0 && (
                 <TableRow>
                   <TableCell colSpan={5} align="right" sx={{ fontWeight: 700, borderTop: 2, borderColor: 'divider' }}>
-                    Total
+                    {t('purchases.total')}
                   </TableCell>
                   <TableCell align="right" sx={{ fontWeight: 700, borderTop: 2, borderColor: 'divider' }}>
                     ৳{filteredTotal.toFixed(2)}

@@ -3,6 +3,7 @@ import {
   Alert, Box, Card, CardContent, Chip, CircularProgress,
   Container, Grid, Table, TableBody, TableCell, TableHead, TableRow, Typography,
 } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import api from '../../api/axios';
 
 function StatCard({ label, value }) {
@@ -41,6 +42,7 @@ function SectionCard({ title, badge, badgeColor, children }) {
 const fmt = (n) => `৳${Number(n ?? 0).toFixed(2)}`;
 
 export default function AdminDashboard() {
+  const { t } = useTranslation();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -48,9 +50,9 @@ export default function AdminDashboard() {
   useEffect(() => {
     api.get('/dashboard/admin')
       .then((res) => setData(res.data))
-      .catch(() => setError('Failed to load dashboard data.'))
+      .catch(() => setError(t('dashboard.failedToLoad')))
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   if (loading) {
     return (
@@ -67,7 +69,6 @@ export default function AdminDashboard() {
     todayTotalGuests = 0,
     predictedMealRate = 0,
     totalPurchasesThisMonth = 0,
-    totalOtherCostsThisMonth = 0,
     totalDepositsThisMonth = 0,
     lowBalanceUsers = [],
     lowStockItems = [],
@@ -78,42 +79,42 @@ export default function AdminDashboard() {
   return (
     <Container maxWidth="xl" sx={{ py: 3 }}>
       <Typography variant="h5" fontWeight={700} gutterBottom>
-        Admin Dashboard
+        {t('dashboard.adminTitle')}
       </Typography>
 
       <Grid container spacing={2}>
 
-        {/* Row 1 — stat cards */}
+        {/* Stat cards */}
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard label="Active Users" value={totalActiveUsers} />
+          <StatCard label={t('dashboard.activeUsers')} value={totalActiveUsers} />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard label="Purchases This Month" value={fmt(totalPurchasesThisMonth)} />
+          <StatCard label={t('dashboard.purchasesThisMonth')} value={fmt(totalPurchasesThisMonth)} />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard label="Deposits This Month" value={fmt(totalDepositsThisMonth)} />
+          <StatCard label={t('dashboard.depositsThisMonth')} value={fmt(totalDepositsThisMonth)} />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard label="Predicted Rate" value={`${fmt(predictedMealRate)}/meal`} />
+          <StatCard label={t('dashboard.predictedRate')} value={`${fmt(predictedMealRate)}${t('common.perMealUnit')}`} />
         </Grid>
 
-        {/* Row 2 — today's meal counts */}
+        {/* Today's meal counts */}
         <Grid size={{ xs: 12, md: 8 }}>
-          <SectionCard title="Today's Meal Counts">
+          <SectionCard title={t('dashboard.todayMealCounts')}>
             <Table size="small">
               <TableHead>
                 <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: 'action.hover' } }}>
-                  <TableCell>Meal Type</TableCell>
-                  <TableCell align="right">Users</TableCell>
-                  <TableCell align="right">Guests</TableCell>
-                  <TableCell align="right">Total Portions</TableCell>
+                  <TableCell>{t('dashboard.mealType')}</TableCell>
+                  <TableCell align="right">{t('dashboard.users')}</TableCell>
+                  <TableCell align="right">{t('dashboard.guests')}</TableCell>
+                  <TableCell align="right">{t('dashboard.totalPortions')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {todayMealCounts.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={4} align="center" sx={{ py: 3, color: 'text.secondary' }}>
-                      No meals toggled for today
+                      {t('dashboard.noMealsToday')}
                     </TableCell>
                   </TableRow>
                 ) : todayMealCounts.map((row) => (
@@ -133,34 +134,34 @@ export default function AdminDashboard() {
           <Card elevation={2} sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="body2" color="text.secondary" gutterBottom>
-                Total Guests Today
+                {t('dashboard.totalGuestsToday')}
               </Typography>
               <Typography variant="h2" fontWeight={700} color="primary">
                 {todayTotalGuests}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                guest portions across all meal types
+                {t('dashboard.guestPortions')}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
 
-        {/* Row 3 — low balance users */}
+        {/* Low balance users */}
         <Grid size={12}>
           <SectionCard
-            title="Low Balance Users"
+            title={t('dashboard.lowBalanceUsers')}
             badge={lowBalanceUsers.length}
             badgeColor="error"
           >
             {lowBalanceUsers.length === 0 ? (
-              <Alert severity="success">All users have sufficient balance.</Alert>
+              <Alert severity="success">{t('dashboard.sufficientBalance')}</Alert>
             ) : (
               <Table size="small">
                 <TableHead>
                   <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: 'action.hover' } }}>
-                    <TableCell>Name</TableCell>
-                    <TableCell>Room</TableCell>
-                    <TableCell align="right">Balance</TableCell>
+                    <TableCell>{t('common.name')}</TableCell>
+                    <TableCell>{t('common.room')}</TableCell>
+                    <TableCell align="right">{t('common.balance')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -182,23 +183,23 @@ export default function AdminDashboard() {
           </SectionCard>
         </Grid>
 
-        {/* Row 4 — low stock + pending approvals */}
+        {/* Low stock + pending approvals */}
         <Grid size={{ xs: 12, md: 6 }}>
           <SectionCard
-            title="Low Stock Items"
+            title={t('dashboard.lowStockItems')}
             badge={lowStockItems.length}
             badgeColor="warning"
           >
             {lowStockItems.length === 0 ? (
-              <Alert severity="success">All stock levels are adequate.</Alert>
+              <Alert severity="success">{t('dashboard.adequateStock')}</Alert>
             ) : (
               <Table size="small">
                 <TableHead>
                   <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: 'action.hover' } }}>
-                    <TableCell>Item</TableCell>
-                    <TableCell align="right">Qty</TableCell>
-                    <TableCell>Unit</TableCell>
-                    <TableCell align="right">Threshold</TableCell>
+                    <TableCell>{t('common.item')}</TableCell>
+                    <TableCell align="right">{t('common.qty')}</TableCell>
+                    <TableCell>{t('common.unit')}</TableCell>
+                    <TableCell align="right">{t('stock.threshold')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -223,19 +224,19 @@ export default function AdminDashboard() {
 
         <Grid size={{ xs: 12, md: 6 }}>
           <SectionCard
-            title="Pending Approvals"
+            title={t('dashboard.pendingApprovals')}
             badge={pendingApprovals.count}
             badgeColor="info"
           >
             {pendingApprovals.count === 0 ? (
-              <Alert severity="success">No pending approvals.</Alert>
+              <Alert severity="success">{t('dashboard.noPendingApprovals')}</Alert>
             ) : (
               <Table size="small">
                 <TableHead>
                   <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: 'action.hover' } }}>
-                    <TableCell>Name</TableCell>
-                    <TableCell>Room</TableCell>
-                    <TableCell>Registered</TableCell>
+                    <TableCell>{t('common.name')}</TableCell>
+                    <TableCell>{t('common.room')}</TableCell>
+                    <TableCell>{t('dashboard.registered')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -252,11 +253,11 @@ export default function AdminDashboard() {
           </SectionCard>
         </Grid>
 
-        {/* Row 5 — chef salary status */}
+        {/* Chef salary status */}
         <Grid size={12}>
-          <SectionCard title="Chef Salary Status — This Month">
+          <SectionCard title={t('dashboard.chefSalaryStatus')}>
             {chefSalaryStatus.length === 0 ? (
-              <Alert severity="info">No active chefs.</Alert>
+              <Alert severity="info">{t('dashboard.noActiveChefs')}</Alert>
             ) : (
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, pt: 0.5 }}>
                 {chefSalaryStatus.map((chef) => (
@@ -269,7 +270,7 @@ export default function AdminDashboard() {
                   >
                     <Typography variant="body2" fontWeight={500}>{chef.name}</Typography>
                     <Chip
-                      label={chef.paidStatus === 'paid' ? 'Paid' : 'Unpaid'}
+                      label={chef.paidStatus === 'paid' ? t('common.paid') : t('common.unpaid')}
                       color={chef.paidStatus === 'paid' ? 'success' : 'warning'}
                       size="small"
                     />

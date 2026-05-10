@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 
@@ -18,6 +19,7 @@ export default function ChefProfilePage() {
   const { id } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [chef, setChef] = useState(null);
   const [salaries, setSalaries] = useState([]);
@@ -57,13 +59,13 @@ export default function ChefProfilePage() {
         setSalaries(historyRes.data.salaries ?? []);
         setBonuses(historyRes.data.bonuses ?? []);
       } catch {
-        notify('Failed to load chef data', 'error');
+        notify(t('chefs.failedToLoad'), 'error');
       } finally {
         setLoading(false);
       }
     };
     load();
-  }, [id]);
+  }, [id, t]);
 
   const openEdit = () => {
     setEditForm({
@@ -89,9 +91,9 @@ export default function ChefProfilePage() {
       });
       setChef(res.data);
       setEditOpen(false);
-      notify('Profile updated');
+      notify(t('chefs.profileUpdated'));
     } catch (err) {
-      notify(err.response?.data?.message ?? 'Failed to update profile', 'error');
+      notify(err.response?.data?.message ?? t('chefs.failedToUpdateProfile'), 'error');
     } finally {
       setEditSubmitting(false);
     }
@@ -116,9 +118,9 @@ export default function ChefProfilePage() {
         return [res.data, ...prev];
       });
       setSalaryOpen(false);
-      notify('Salary recorded');
+      notify(t('chefs.salaryRecorded'));
     } catch (err) {
-      notify(err.response?.data?.message ?? 'Failed to record salary', 'error');
+      notify(err.response?.data?.message ?? t('chefs.failedToRecordSalary'), 'error');
     } finally {
       setSalarySubmitting(false);
     }
@@ -136,9 +138,9 @@ export default function ChefProfilePage() {
       setBonuses(prev => [res.data, ...prev]);
       setBonusForm({ amount: '', date: today(), reason: '' });
       setBonusOpen(false);
-      notify('Bonus recorded');
+      notify(t('chefs.bonusRecorded'));
     } catch (err) {
-      notify(err.response?.data?.message ?? 'Failed to record bonus', 'error');
+      notify(err.response?.data?.message ?? t('chefs.failedToRecordBonus'), 'error');
     } finally {
       setBonusSubmitting(false);
     }
@@ -155,7 +157,7 @@ export default function ChefProfilePage() {
   if (!chef) {
     return (
       <Container maxWidth="md" sx={{ py: 3 }}>
-        <Alert severity="error">Chef not found.</Alert>
+        <Alert severity="error">{t('chefs.chefNotFound')}</Alert>
       </Container>
     );
   }
@@ -163,7 +165,7 @@ export default function ChefProfilePage() {
   return (
     <Container maxWidth="md" sx={{ py: 3 }}>
       <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/admin/chefs')} sx={{ mb: 2 }}>
-        Back to Chefs
+        {t('chefs.backToChefs')}
       </Button>
 
       {/* Chef details */}
@@ -174,12 +176,12 @@ export default function ChefProfilePage() {
           action={
             <Stack direction="row" spacing={1} alignItems="center">
               <Chip
-                label={chef.isActive ? 'Active' : 'Inactive'}
+                label={chef.isActive ? t('common.active') : t('common.inactive')}
                 color={chef.isActive ? 'success' : 'default'}
                 size="small"
               />
               <Button variant="outlined" size="small" onClick={openEdit}>
-                Edit Profile
+                {t('chefs.editProfile')}
               </Button>
             </Stack>
           }
@@ -188,17 +190,17 @@ export default function ChefProfilePage() {
         <CardContent>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3}>
             <Box>
-              <Typography variant="caption" color="text.secondary">Phone</Typography>
+              <Typography variant="caption" color="text.secondary">{t('common.phone')}</Typography>
               <Typography>{chef.phone ?? '—'}</Typography>
             </Box>
             <Box>
-              <Typography variant="caption" color="text.secondary">Join Date</Typography>
+              <Typography variant="caption" color="text.secondary">{t('chefs.joinDate')}</Typography>
               <Typography>
                 {chef.joinDate ? format(new Date(chef.joinDate), 'dd MMM yyyy') : '—'}
               </Typography>
             </Box>
             <Box>
-              <Typography variant="caption" color="text.secondary">Monthly Salary</Typography>
+              <Typography variant="caption" color="text.secondary">{t('chefs.monthlySalary')}</Typography>
               <Typography fontWeight={600}>
                 {chef.salaryAmount != null ? `৳${chef.salaryAmount.toLocaleString()}` : '—'}
               </Typography>
@@ -210,14 +212,14 @@ export default function ChefProfilePage() {
       {/* Salary history */}
       <Card elevation={2} sx={{ mb: 3 }}>
         <CardHeader
-          title="Salary History"
+          title={t('chefs.salaryHistory')}
           titleTypographyProps={{ variant: 'h6' }}
           action={
             <Button variant="contained" size="small" onClick={() => {
               setSalaryForm({ billingMonth: currentMonth(), salaryAmount: chef.salaryAmount ?? '', paidStatus: 'unpaid' });
               setSalaryOpen(true);
             }}>
-              Record Salary
+              {t('chefs.recordSalary')}
             </Button>
           }
         />
@@ -225,17 +227,17 @@ export default function ChefProfilePage() {
         <Table size="small">
           <TableHead>
             <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: 'action.hover' } }}>
-              <TableCell>Month</TableCell>
-              <TableCell align="right">Amount</TableCell>
-              <TableCell align="center">Status</TableCell>
-              <TableCell>Paid At</TableCell>
+              <TableCell>{t('common.month')}</TableCell>
+              <TableCell align="right">{t('common.amount')}</TableCell>
+              <TableCell align="center">{t('common.status')}</TableCell>
+              <TableCell>{t('chefs.paidAt')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {salaries.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} align="center" sx={{ py: 3, color: 'text.secondary' }}>
-                  No salary records
+                  {t('chefs.noSalaryRecords')}
                 </TableCell>
               </TableRow>
             ) : salaries.map(s => (
@@ -244,7 +246,7 @@ export default function ChefProfilePage() {
                 <TableCell align="right">৳{s.salaryAmount?.toLocaleString()}</TableCell>
                 <TableCell align="center">
                   <Chip
-                    label={s.paidStatus === 'paid' ? 'Paid' : 'Unpaid'}
+                    label={s.paidStatus === 'paid' ? t('common.paid') : t('common.unpaid')}
                     color={s.paidStatus === 'paid' ? 'success' : 'warning'}
                     size="small"
                   />
@@ -261,14 +263,14 @@ export default function ChefProfilePage() {
       {/* Bonus history */}
       <Card elevation={2}>
         <CardHeader
-          title="Bonus History"
+          title={t('chefs.bonusHistory')}
           titleTypographyProps={{ variant: 'h6' }}
           action={
             <Button variant="contained" size="small" color="secondary" onClick={() => {
               setBonusForm({ amount: '', date: today(), reason: '' });
               setBonusOpen(true);
             }}>
-              Add Bonus
+              {t('chefs.addBonus')}
             </Button>
           }
         />
@@ -276,16 +278,16 @@ export default function ChefProfilePage() {
         <Table size="small">
           <TableHead>
             <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: 'action.hover' } }}>
-              <TableCell>Date</TableCell>
-              <TableCell align="right">Amount</TableCell>
-              <TableCell>Reason</TableCell>
+              <TableCell>{t('common.date')}</TableCell>
+              <TableCell align="right">{t('common.amount')}</TableCell>
+              <TableCell>{t('common.reason')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {bonuses.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={3} align="center" sx={{ py: 3, color: 'text.secondary' }}>
-                  No bonus records
+                  {t('chefs.noBonus')}
                 </TableCell>
               </TableRow>
             ) : bonuses.map(b => (
@@ -301,49 +303,49 @@ export default function ChefProfilePage() {
 
       {/* Edit profile dialog */}
       <Dialog open={editOpen} onClose={() => setEditOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Edit Profile</DialogTitle>
+        <DialogTitle>{t('chefs.editProfileTitle')}</DialogTitle>
         <Box component="form" onSubmit={handleEditSubmit}>
           <DialogContent>
             <Stack spacing={2} sx={{ mt: 0.5 }}>
               <Stack direction="row" spacing={2}>
                 <TextField
-                  label="Name" value={editForm.name ?? ''} required
+                  label={t('common.name')} value={editForm.name ?? ''} required
                   onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
                   sx={{ flex: 1 }}
                 />
                 <TextField
-                  label="Phone" value={editForm.phone ?? ''}
+                  label={t('common.phone')} value={editForm.phone ?? ''}
                   onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))}
                   sx={{ flex: 1 }}
                 />
               </Stack>
               <Stack direction="row" spacing={2}>
                 <TextField
-                  label="Join Date" type="date" value={editForm.joinDate ?? ''}
+                  label={t('chefs.joinDate')} type="date" value={editForm.joinDate ?? ''}
                   onChange={e => setEditForm(f => ({ ...f, joinDate: e.target.value }))}
                   slotProps={{ inputLabel: { shrink: true } }} sx={{ flex: 1 }}
                 />
                 <TextField
-                  label="Salary Amount" value={editForm.salaryAmount ?? ''} type="number"
+                  label={t('chefs.salaryAmount')} value={editForm.salaryAmount ?? ''} type="number"
                   slotProps={{ htmlInput: { min: 0, step: 'any' } }}
                   onChange={e => setEditForm(f => ({ ...f, salaryAmount: e.target.value }))}
                   sx={{ flex: 1 }}
                 />
               </Stack>
               <TextField
-                select label="Status" value={editForm.isActive ?? true}
+                select label={t('common.status')} value={editForm.isActive ?? true}
                 onChange={e => setEditForm(f => ({ ...f, isActive: e.target.value === 'true' }))}
                 fullWidth
               >
-                <MenuItem value="true">Active</MenuItem>
-                <MenuItem value="false">Inactive</MenuItem>
+                <MenuItem value="true">{t('common.active')}</MenuItem>
+                <MenuItem value="false">{t('common.inactive')}</MenuItem>
               </TextField>
             </Stack>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setEditOpen(false)}>Cancel</Button>
+            <Button onClick={() => setEditOpen(false)}>{t('common.cancel')}</Button>
             <Button type="submit" variant="contained" disabled={editSubmitting}>
-              {editSubmitting ? <CircularProgress size={20} color="inherit" /> : 'Save'}
+              {editSubmitting ? <CircularProgress size={20} color="inherit" /> : t('common.save')}
             </Button>
           </DialogActions>
         </Box>
@@ -351,35 +353,35 @@ export default function ChefProfilePage() {
 
       {/* Record salary dialog */}
       <Dialog open={salaryOpen} onClose={() => setSalaryOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>Record Salary</DialogTitle>
+        <DialogTitle>{t('chefs.recordSalaryTitle')}</DialogTitle>
         <Box component="form" onSubmit={handleSalarySubmit}>
           <DialogContent>
             <Stack spacing={2} sx={{ mt: 0.5 }}>
               <TextField
-                label="Billing Month" value={salaryForm.billingMonth} required
+                label={t('chefs.billingMonth')} value={salaryForm.billingMonth} required
                 onChange={e => setSalaryForm(f => ({ ...f, billingMonth: e.target.value }))}
                 placeholder="YYYY-MM" slotProps={{ inputLabel: { shrink: true } }} fullWidth
               />
               <TextField
-                label="Amount" value={salaryForm.salaryAmount} type="number" required
+                label={t('common.amount')} value={salaryForm.salaryAmount} type="number" required
                 slotProps={{ htmlInput: { min: 0, step: 'any' } }}
                 onChange={e => setSalaryForm(f => ({ ...f, salaryAmount: e.target.value }))}
                 fullWidth
               />
               <TextField
-                select label="Status" value={salaryForm.paidStatus}
+                select label={t('common.status')} value={salaryForm.paidStatus}
                 onChange={e => setSalaryForm(f => ({ ...f, paidStatus: e.target.value }))}
                 fullWidth
               >
-                <MenuItem value="unpaid">Unpaid</MenuItem>
-                <MenuItem value="paid">Paid</MenuItem>
+                <MenuItem value="unpaid">{t('common.unpaid')}</MenuItem>
+                <MenuItem value="paid">{t('common.paid')}</MenuItem>
               </TextField>
             </Stack>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setSalaryOpen(false)}>Cancel</Button>
+            <Button onClick={() => setSalaryOpen(false)}>{t('common.cancel')}</Button>
             <Button type="submit" variant="contained" disabled={salarySubmitting}>
-              {salarySubmitting ? <CircularProgress size={20} color="inherit" /> : 'Record'}
+              {salarySubmitting ? <CircularProgress size={20} color="inherit" /> : t('common.record')}
             </Button>
           </DialogActions>
         </Box>
@@ -387,32 +389,32 @@ export default function ChefProfilePage() {
 
       {/* Add bonus dialog */}
       <Dialog open={bonusOpen} onClose={() => setBonusOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>Add Bonus</DialogTitle>
+        <DialogTitle>{t('chefs.addBonusTitle')}</DialogTitle>
         <Box component="form" onSubmit={handleBonusSubmit}>
           <DialogContent>
             <Stack spacing={2} sx={{ mt: 0.5 }}>
               <TextField
-                label="Amount" value={bonusForm.amount} type="number" required autoFocus
+                label={t('common.amount')} value={bonusForm.amount} type="number" required autoFocus
                 slotProps={{ htmlInput: { min: 0, step: 'any' } }}
                 onChange={e => setBonusForm(f => ({ ...f, amount: e.target.value }))}
                 fullWidth
               />
               <TextField
-                label="Date" type="date" value={bonusForm.date} required
+                label={t('common.date')} type="date" value={bonusForm.date} required
                 onChange={e => setBonusForm(f => ({ ...f, date: e.target.value }))}
                 slotProps={{ inputLabel: { shrink: true } }} fullWidth
               />
               <TextField
-                label="Reason" value={bonusForm.reason} required multiline rows={2}
+                label={t('common.reason')} value={bonusForm.reason} required multiline rows={2}
                 onChange={e => setBonusForm(f => ({ ...f, reason: e.target.value }))}
                 fullWidth
               />
             </Stack>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setBonusOpen(false)}>Cancel</Button>
+            <Button onClick={() => setBonusOpen(false)}>{t('common.cancel')}</Button>
             <Button type="submit" variant="contained" color="secondary" disabled={bonusSubmitting}>
-              {bonusSubmitting ? <CircularProgress size={20} color="inherit" /> : 'Add Bonus'}
+              {bonusSubmitting ? <CircularProgress size={20} color="inherit" /> : t('chefs.addBonus')}
             </Button>
           </DialogActions>
         </Box>

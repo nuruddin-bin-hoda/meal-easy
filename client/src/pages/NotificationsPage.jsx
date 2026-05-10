@@ -4,9 +4,11 @@ import {
   Alert, Box, Button, Card, Chip, CircularProgress,
   Container, Divider, List, ListItem, ListItemText, Typography,
 } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 
 export default function NotificationsPage() {
+  const { t } = useTranslation();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -19,11 +21,11 @@ export default function NotificationsPage() {
       const res = await api.get('/notifications?limit=100');
       setNotifications(res.data.data ?? []);
     } catch {
-      setError('Failed to load notifications.');
+      setError(t('notifications.failedToLoad'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
 
@@ -42,10 +44,10 @@ export default function NotificationsPage() {
     <Container maxWidth="md" sx={{ py: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
         <Typography variant="h5" fontWeight={700}>
-          Notifications
+          {t('notifications.title')}
         </Typography>
         {unreadCount > 0 && (
-          <Chip label={`${unreadCount} unread`} color="primary" size="small" />
+          <Chip label={t('notifications.unread', { count: unreadCount })} color="primary" size="small" />
         )}
       </Box>
 
@@ -58,7 +60,7 @@ export default function NotificationsPage() {
       {error && <Alert severity="error">{error}</Alert>}
 
       {!loading && !error && notifications.length === 0 && (
-        <Alert severity="info">No notifications yet.</Alert>
+        <Alert severity="info">{t('notifications.noNotifications')}</Alert>
       )}
 
       {!loading && notifications.length > 0 && (
@@ -85,7 +87,7 @@ export default function NotificationsPage() {
                           {n.message}
                         </Typography>
                         {!n.isRead && (
-                          <Chip label="New" color="primary" size="small" />
+                          <Chip label={t('common.new')} color="primary" size="small" />
                         )}
                       </Box>
                     }
@@ -102,7 +104,7 @@ export default function NotificationsPage() {
                     >
                       {markingId === n._id
                         ? <CircularProgress size={16} color="inherit" />
-                        : 'Mark Read'}
+                        : t('notifications.markRead')}
                     </Button>
                   )}
                 </ListItem>

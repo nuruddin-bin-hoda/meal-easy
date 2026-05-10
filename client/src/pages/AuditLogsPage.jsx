@@ -7,27 +7,28 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { DataGrid } from '@mui/x-data-grid';
+import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 
 const ADMIN_ROLES = ['admin', 'superadmin'];
 
-const ACTION_TYPES = [
-  { value: '', label: 'All Actions' },
-  { value: 'PURCHASE_CREATED', label: 'Purchase Created' },
-  { value: 'PURCHASE_DELETED', label: 'Purchase Deleted' },
-  { value: 'DEPOSIT_RECORDED', label: 'Deposit Recorded' },
-  { value: 'MEAL_TOGGLED', label: 'Meal Toggled' },
-  { value: 'BILLING_SUBMITTED', label: 'Billing Submitted' },
-  { value: 'USER_APPROVED', label: 'User Approved' },
-  { value: 'USER_REJECTED', label: 'User Rejected' },
-  { value: 'USER_BLOCKED', label: 'User Blocked' },
-  { value: 'USER_UNBLOCKED', label: 'User Unblocked' },
-  { value: 'STOCK_UPDATE', label: 'Stock Update' },
-  { value: 'MENU_UPDATED', label: 'Menu Updated' },
-  { value: 'SETTINGS_UPDATED', label: 'Settings Updated' },
-  { value: 'SALARY_RECORDED', label: 'Salary Recorded' },
-  { value: 'BONUS_RECORDED', label: 'Bonus Recorded' },
+const ACTION_VALUES = [
+  { value: '', key: 'audit.allActions' },
+  { value: 'PURCHASE_CREATED', key: 'audit.purchaseCreated' },
+  { value: 'PURCHASE_DELETED', key: 'audit.purchaseDeleted' },
+  { value: 'DEPOSIT_RECORDED', key: 'audit.depositRecorded' },
+  { value: 'MEAL_TOGGLED', key: 'audit.mealToggled' },
+  { value: 'BILLING_SUBMITTED', key: 'audit.billingSubmitted' },
+  { value: 'USER_APPROVED', key: 'audit.userApproved' },
+  { value: 'USER_REJECTED', key: 'audit.userRejected' },
+  { value: 'USER_BLOCKED', key: 'audit.userBlocked' },
+  { value: 'USER_UNBLOCKED', key: 'audit.userUnblocked' },
+  { value: 'STOCK_UPDATE', key: 'audit.stockUpdate' },
+  { value: 'MENU_UPDATED', key: 'audit.menuUpdated' },
+  { value: 'SETTINGS_UPDATED', key: 'audit.settingsUpdated' },
+  { value: 'SALARY_RECORDED', key: 'audit.salaryRecorded' },
+  { value: 'BONUS_RECORDED', key: 'audit.bonusRecorded' },
 ];
 
 const ROLE_COLORS = {
@@ -61,6 +62,7 @@ const EMPTY_FILTERS = { startDate: '', endDate: '', action: '', actorId: '' };
 
 export default function AuditLogsPage() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const isAdmin = ADMIN_ROLES.includes(user?.role);
 
   const [filterForm, setFilterForm] = useState(EMPTY_FILTERS);
@@ -85,7 +87,7 @@ export default function AuditLogsPage() {
     setError('');
     try {
       const params = new URLSearchParams({
-        page: String(paginationModel.page + 1), // DataGrid is 0-indexed; server is 1-indexed
+        page: String(paginationModel.page + 1),
         limit: String(paginationModel.pageSize),
       });
       if (appliedFilters.startDate) params.set('startDate', appliedFilters.startDate);
@@ -97,11 +99,11 @@ export default function AuditLogsPage() {
       setRows(res.data.data ?? []);
       setRowCount(res.data.total ?? 0);
     } catch {
-      setError('Failed to load audit logs.');
+      setError(t('audit.failedToLoad'));
     } finally {
       setLoading(false);
     }
-  }, [appliedFilters, paginationModel, isAdmin]);
+  }, [appliedFilters, paginationModel, isAdmin, t]);
 
   useEffect(() => { fetchLogs(); }, [fetchLogs]);
 
@@ -121,7 +123,7 @@ export default function AuditLogsPage() {
   const columns = [
     {
       field: 'timestamp',
-      headerName: 'Timestamp',
+      headerName: t('audit.timestamp'),
       flex: 1.4,
       minWidth: 165,
       valueFormatter: (value) =>
@@ -129,13 +131,13 @@ export default function AuditLogsPage() {
     },
     {
       field: 'actorName',
-      headerName: 'Actor',
+      headerName: t('audit.actor'),
       flex: 1,
       minWidth: 120,
     },
     {
       field: 'actorRole',
-      headerName: 'Role',
+      headerName: t('common.role'),
       width: 110,
       renderCell: ({ value }) => (
         <Chip
@@ -148,13 +150,13 @@ export default function AuditLogsPage() {
     },
     {
       field: 'action',
-      headerName: 'Action',
+      headerName: t('audit.action'),
       flex: 1.2,
       minWidth: 140,
     },
     {
       field: 'targetEntity',
-      headerName: 'Target',
+      headerName: t('audit.target'),
       flex: 0.8,
       minWidth: 100,
       valueFormatter: (value) => value ?? '—',
@@ -164,41 +166,40 @@ export default function AuditLogsPage() {
   return (
     <Container maxWidth="xl" sx={{ py: 3 }}>
       <Typography variant="h5" fontWeight={700} gutterBottom>
-        Audit Logs
+        {t('audit.title')}
       </Typography>
 
-      {/* Filter bar */}
       <Card elevation={1} sx={{ mb: 2 }}>
         <CardContent sx={{ py: '12px !important' }}>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center" flexWrap="wrap">
             <TextField
-              label="From" type="date" value={filterForm.startDate} size="small"
+              label={t('common.from')} type="date" value={filterForm.startDate} size="small"
               onChange={setField('startDate')}
               slotProps={{ inputLabel: { shrink: true } }}
               sx={{ minWidth: 150 }}
             />
             <TextField
-              label="To" type="date" value={filterForm.endDate} size="small"
+              label={t('common.to')} type="date" value={filterForm.endDate} size="small"
               onChange={setField('endDate')}
               slotProps={{ inputLabel: { shrink: true } }}
               sx={{ minWidth: 150 }}
             />
             <TextField
-              select label="Action" value={filterForm.action} size="small"
+              select label={t('audit.action')} value={filterForm.action} size="small"
               onChange={setField('action')}
               sx={{ minWidth: 190 }}
             >
-              {ACTION_TYPES.map((a) => (
-                <MenuItem key={a.value} value={a.value}>{a.label}</MenuItem>
+              {ACTION_VALUES.map((a) => (
+                <MenuItem key={a.value} value={a.value}>{t(a.key)}</MenuItem>
               ))}
             </TextField>
             {isAdmin && (
               <TextField
-                select label="Actor" value={filterForm.actorId} size="small"
+                select label={t('audit.actor')} value={filterForm.actorId} size="small"
                 onChange={setField('actorId')}
                 sx={{ minWidth: 190 }}
               >
-                <MenuItem value="">All actors</MenuItem>
+                <MenuItem value="">{t('audit.allActors')}</MenuItem>
                 {users.map((u) => (
                   <MenuItem key={u._id} value={u._id}>{u.name}</MenuItem>
                 ))}
@@ -206,10 +207,10 @@ export default function AuditLogsPage() {
             )}
             <Stack direction="row" spacing={1}>
               <Button variant="contained" size="small" onClick={handleApply}>
-                Apply
+                {t('common.apply')}
               </Button>
               <Button variant="outlined" size="small" onClick={handleReset}>
-                Reset
+                {t('common.reset')}
               </Button>
             </Stack>
           </Stack>
@@ -218,7 +219,6 @@ export default function AuditLogsPage() {
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-      {/* DataGrid */}
       <Box sx={{ height: 620, width: '100%' }}>
         <DataGrid
           rows={rows}
@@ -236,7 +236,7 @@ export default function AuditLogsPage() {
             '& .MuiDataGrid-row:hover': { bgcolor: 'action.hover' },
           }}
           disableRowSelectionOnClick
-          localeText={{ noRowsLabel: 'No audit log entries found.' }}
+          localeText={{ noRowsLabel: t('audit.noEntries') }}
           slotProps={{ loadingOverlay: { variant: 'skeleton', noRowsVariant: 'skeleton' } }}
         />
       </Box>
@@ -249,7 +249,7 @@ export default function AuditLogsPage() {
         fullWidth
       >
         <DialogTitle sx={{ pr: 6 }}>
-          Log Detail
+          {t('audit.logDetail')}
           <IconButton
             onClick={() => setDetailRow(null)}
             size="small"
@@ -264,13 +264,13 @@ export default function AuditLogsPage() {
             <Stack spacing={2}>
               <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
                 <Box>
-                  <Typography variant="caption" color="text.secondary">Timestamp</Typography>
+                  <Typography variant="caption" color="text.secondary">{t('audit.timestamp')}</Typography>
                   <Typography variant="body2" fontWeight={600}>
                     {format(new Date(detailRow.timestamp), 'dd MMM yyyy, HH:mm:ss')}
                   </Typography>
                 </Box>
                 <Box>
-                  <Typography variant="caption" color="text.secondary">Actor</Typography>
+                  <Typography variant="caption" color="text.secondary">{t('audit.actor')}</Typography>
                   <Typography variant="body2" fontWeight={600}>
                     {detailRow.actorName}
                     <Chip
@@ -283,11 +283,11 @@ export default function AuditLogsPage() {
                   </Typography>
                 </Box>
                 <Box>
-                  <Typography variant="caption" color="text.secondary">Action</Typography>
+                  <Typography variant="caption" color="text.secondary">{t('audit.action')}</Typography>
                   <Typography variant="body2" fontWeight={600}>{detailRow.action}</Typography>
                 </Box>
                 <Box>
-                  <Typography variant="caption" color="text.secondary">Target</Typography>
+                  <Typography variant="caption" color="text.secondary">{t('audit.target')}</Typography>
                   <Typography variant="body2" fontWeight={600}>
                     {detailRow.targetEntity ?? '—'}
                     {detailRow.targetId && (
@@ -303,11 +303,11 @@ export default function AuditLogsPage() {
               </Box>
 
               <Divider />
-              <JsonBlock label="Old Value" value={detailRow.oldValue} />
-              <JsonBlock label="New Value" value={detailRow.newValue} />
+              <JsonBlock label={t('audit.oldValue')} value={detailRow.oldValue} />
+              <JsonBlock label={t('audit.newValue')} value={detailRow.newValue} />
               {detailRow.oldValue == null && detailRow.newValue == null && (
                 <Typography variant="body2" color="text.secondary">
-                  No value snapshot recorded for this action.
+                  {t('audit.noValueSnapshot')}
                 </Typography>
               )}
             </Stack>

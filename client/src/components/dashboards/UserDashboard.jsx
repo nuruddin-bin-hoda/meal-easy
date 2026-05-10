@@ -8,10 +8,11 @@ import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import NotificationsIcon from '@mui/icons-material/Notifications';
+import { useTranslation } from 'react-i18next';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 
-function ToggleCard({ toggle, menuItems = [], disabled, saving, onToggle, onGuestStep }) {
+function ToggleCard({ toggle, menuItems = [], disabled, saving, onToggle, onGuestStep, guestMealsLabel }) {
   return (
     <Card elevation={1} sx={{ mb: 1.5 }}>
       <CardContent sx={{ pb: '12px !important', pt: 1.5, px: 2 }}>
@@ -46,7 +47,7 @@ function ToggleCard({ toggle, menuItems = [], disabled, saving, onToggle, onGues
             <Divider sx={{ my: 1 }} />
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <Typography variant="caption" color="text.secondary">
-                Guest meals
+                {guestMealsLabel}
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, ml: 'auto' }}>
                 <IconButton
@@ -81,6 +82,7 @@ function ToggleCard({ toggle, menuItems = [], disabled, saving, onToggle, onGues
 
 export default function UserDashboard() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -94,9 +96,9 @@ export default function UserDashboard() {
         setData(res.data);
         setToggles(res.data.tomorrowToggles ?? []);
       })
-      .catch(() => setError('Failed to load dashboard data.'))
+      .catch(() => setError(t('dashboard.failedToLoad')))
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   const save = useCallback(async (mealType, isOn, guestCount) => {
     setSaving((s) => ({ ...s, [mealType]: true }));
@@ -106,7 +108,7 @@ export default function UserDashboard() {
         prev.map((t) => t.mealType === mealType ? { ...t, isOn: saved.isOn, guestCount: saved.guestCount } : t),
       );
     } catch {
-      // silently revert — the switch snaps back on next re-render because state didn't update
+      // silently revert
     } finally {
       setSaving((s) => ({ ...s, [mealType]: false }));
     }
@@ -143,7 +145,6 @@ export default function UserDashboard() {
     predictedMealRate = 0,
     myMealCountThisMonth = 0,
     tomorrowMenu = [],
-    cutoffTime = '22:00',
     isCutoffPassed = false,
     lowStockWarnings = [],
     recentNotifications = [],
@@ -157,18 +158,18 @@ export default function UserDashboard() {
   return (
     <Container maxWidth="md" sx={{ py: 3 }}>
       <Typography variant="h5" fontWeight={700} gutterBottom>
-        My Dashboard
+        {t('dashboard.userTitle')}
       </Typography>
 
       {lowStockWarnings.length > 0 && (
         <Alert severity="warning" sx={{ mb: 2 }}>
-          Low stock: {lowStockWarnings.join(', ')}
+          {t('dashboard.lowStockWarning')} {lowStockWarnings.join(', ')}
         </Alert>
       )}
 
       {user?.mealBlocked && (
         <Alert severity="error" sx={{ mb: 2 }}>
-          Your meal access is blocked. Contact admin.
+          {t('dashboard.mealBlocked')}
         </Alert>
       )}
 
@@ -179,7 +180,7 @@ export default function UserDashboard() {
           <Card elevation={2} sx={{ bgcolor: balanceBg, height: '100%' }}>
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="body2" color="text.secondary" gutterBottom>
-                My Balance
+                {t('dashboard.balance')}
               </Typography>
               <Typography variant="h4" fontWeight={700} sx={{ color: balanceColor }}>
                 ৳{balance.toFixed(2)}
@@ -193,12 +194,12 @@ export default function UserDashboard() {
           <Card elevation={2} sx={{ height: '100%' }}>
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="body2" color="text.secondary" gutterBottom>
-                Predicted Rate
+                {t('dashboard.predictedRate')}
               </Typography>
               <Typography variant="h4" fontWeight={700}>
                 ৳{predictedMealRate.toFixed(2)}
               </Typography>
-              <Typography variant="caption" color="text.secondary">per meal</Typography>
+              <Typography variant="caption" color="text.secondary">{t('dashboard.perMeal')}</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -208,12 +209,12 @@ export default function UserDashboard() {
           <Card elevation={2} sx={{ height: '100%' }}>
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="body2" color="text.secondary" gutterBottom>
-                My Meals This Month
+                {t('dashboard.mealsThisMonth')}
               </Typography>
               <Typography variant="h4" fontWeight={700} color="primary">
                 {myMealCountThisMonth}
               </Typography>
-              <Typography variant="caption" color="text.secondary">meals toggled on</Typography>
+              <Typography variant="caption" color="text.secondary">{t('dashboard.mealsToggledOn')}</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -223,11 +224,11 @@ export default function UserDashboard() {
           <Card elevation={2}>
             <CardContent>
               <Typography variant="subtitle1" fontWeight={700} gutterBottom>
-                Tomorrow's Menu
+                {t('dashboard.tomorrowMenu')}
               </Typography>
               {tomorrowMenu.length === 0 ? (
                 <Typography variant="body2" color="text.secondary">
-                  Menu not set yet.
+                  {t('dashboard.menuNotSet')}
                 </Typography>
               ) : (
                 <Stack spacing={1.5}>
@@ -262,12 +263,12 @@ export default function UserDashboard() {
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <Typography variant="subtitle1" fontWeight={700}>
-                  Tomorrow's Meals
+                  {t('dashboard.tomorrowMeals')}
                 </Typography>
                 {isCutoffPassed && (
                   <Chip
                     icon={<LockOutlinedIcon />}
-                    label="Cutoff passed"
+                    label={t('dashboard.cutoffPassed')}
                     size="small"
                     color="warning"
                     variant="outlined"
@@ -277,7 +278,7 @@ export default function UserDashboard() {
 
               {toggles.length === 0 ? (
                 <Typography variant="body2" color="text.secondary">
-                  No meal toggles available.
+                  {t('dashboard.noMealToggles')}
                 </Typography>
               ) : toggles.map((toggle) => (
                 <ToggleCard
@@ -288,6 +289,7 @@ export default function UserDashboard() {
                   saving={!!saving[toggle.mealType]}
                   onToggle={handleToggle}
                   onGuestStep={handleGuestStep}
+                  guestMealsLabel={t('dashboard.guestMeals')}
                 />
               ))}
             </CardContent>
@@ -301,12 +303,12 @@ export default function UserDashboard() {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <NotificationsIcon fontSize="small" color="action" />
                 <Typography variant="subtitle1" fontWeight={700}>
-                  Recent Notifications
+                  {t('dashboard.recentNotifications')}
                 </Typography>
               </Box>
               {recentNotifications.length === 0 ? (
                 <Typography variant="body2" color="text.secondary">
-                  No notifications yet.
+                  {t('dashboard.noNotifications')}
                 </Typography>
               ) : (
                 <List dense disablePadding>
@@ -327,7 +329,7 @@ export default function UserDashboard() {
                         secondaryTypographyProps={{ variant: 'caption' }}
                       />
                       {!n.isRead && (
-                        <Chip label="New" color="primary" size="small" sx={{ ml: 1, flexShrink: 0 }} />
+                        <Chip label={t('common.new')} color="primary" size="small" sx={{ ml: 1, flexShrink: 0 }} />
                       )}
                     </ListItem>
                   ))}

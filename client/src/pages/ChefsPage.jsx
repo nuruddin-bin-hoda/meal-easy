@@ -7,6 +7,7 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 
@@ -19,6 +20,7 @@ const EMPTY_FORM = {
 export default function ChefsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [chefs, setChefs] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -39,9 +41,9 @@ export default function ChefsPage() {
     setLoading(true);
     api.get('/chefs')
       .then(res => setChefs(res.data.chefs ?? []))
-      .catch(() => notify('Failed to load chefs', 'error'))
+      .catch(() => notify(t('chefs.failedToLoad'), 'error'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   const handleField = (key) => (e) => setForm(f => ({ ...f, [key]: e.target.value }));
 
@@ -62,9 +64,9 @@ export default function ChefsPage() {
       setChefs(prev => [res.data.chef, ...prev]);
       setForm(EMPTY_FORM);
       setAddOpen(false);
-      notify('Chef added');
+      notify(t('chefs.chefAdded'));
     } catch (err) {
-      notify(err.response?.data?.message ?? 'Failed to add chef', 'error');
+      notify(err.response?.data?.message ?? t('chefs.failedToAdd'), 'error');
     } finally {
       setSubmitting(false);
     }
@@ -73,9 +75,9 @@ export default function ChefsPage() {
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-        <Typography variant="h5" fontWeight={700}>Chefs</Typography>
+        <Typography variant="h5" fontWeight={700}>{t('chefs.title')}</Typography>
         <Button variant="contained" startIcon={<AddIcon />} onClick={() => setAddOpen(true)}>
-          Add Chef
+          {t('chefs.addChef')}
         </Button>
       </Stack>
 
@@ -85,18 +87,18 @@ export default function ChefsPage() {
         <Table size="small">
           <TableHead>
             <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: 'action.hover' } }}>
-              <TableCell>Name</TableCell>
-              <TableCell>Phone</TableCell>
-              <TableCell>Join Date</TableCell>
-              <TableCell align="right">Salary</TableCell>
-              <TableCell align="center">Status</TableCell>
+              <TableCell>{t('common.name')}</TableCell>
+              <TableCell>{t('common.phone')}</TableCell>
+              <TableCell>{t('chefs.joinDate')}</TableCell>
+              <TableCell align="right">{t('chefs.salary')}</TableCell>
+              <TableCell align="center">{t('common.status')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {chefs.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} align="center" sx={{ py: 4, color: 'text.secondary' }}>
-                  No chefs found
+                  {t('chefs.noChefs')}
                 </TableCell>
               </TableRow>
             ) : chefs.map(chef => (
@@ -115,7 +117,7 @@ export default function ChefsPage() {
                 </TableCell>
                 <TableCell align="center">
                   <Chip
-                    label={chef.isActive ? 'Active' : 'Inactive'}
+                    label={chef.isActive ? t('common.active') : t('common.inactive')}
                     color={chef.isActive ? 'success' : 'default'}
                     size="small"
                   />
@@ -127,39 +129,39 @@ export default function ChefsPage() {
       )}
 
       <Dialog open={addOpen} onClose={() => setAddOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Add Chef</DialogTitle>
+        <DialogTitle>{t('chefs.addChefTitle')}</DialogTitle>
         <Box component="form" onSubmit={handleSubmit}>
           <DialogContent>
             <Stack spacing={2} sx={{ mt: 0.5 }}>
               <Stack direction="row" spacing={2}>
-                <TextField label="Name" value={form.name} required autoFocus onChange={handleField('name')} sx={{ flex: 1 }} />
-                <TextField label="Phone" value={form.phone} required onChange={handleField('phone')} sx={{ flex: 1 }} />
+                <TextField label={t('common.name')} value={form.name} required autoFocus onChange={handleField('name')} sx={{ flex: 1 }} />
+                <TextField label={t('common.phone')} value={form.phone} required onChange={handleField('phone')} sx={{ flex: 1 }} />
               </Stack>
               <Stack direction="row" spacing={2}>
                 <TextField
-                  label="Join Date" type="date" value={form.joinDate} required
+                  label={t('chefs.joinDate')} type="date" value={form.joinDate} required
                   onChange={handleField('joinDate')}
                   slotProps={{ inputLabel: { shrink: true } }} sx={{ flex: 1 }}
                 />
                 <TextField
-                  label="Salary Amount" value={form.salaryAmount} type="number" required
+                  label={t('chefs.salaryAmount')} value={form.salaryAmount} type="number" required
                   slotProps={{ htmlInput: { min: 0, step: 'any' } }}
                   onChange={handleField('salaryAmount')} sx={{ flex: 1 }}
                 />
               </Stack>
               <Stack direction="row" spacing={2}>
                 <TextField
-                  label="Username" value={form.loginUsername} required
+                  label={t('chefs.username')} value={form.loginUsername} required
                   onChange={handleField('loginUsername')} sx={{ flex: 1 }}
                 />
                 <TextField
-                  label="Password" value={form.loginPassword} type="password" required
+                  label={t('auth.password')} value={form.loginPassword} type="password" required
                   onChange={handleField('loginPassword')} sx={{ flex: 1 }}
-                  helperText="Min 6 characters"
+                  helperText={t('chefs.passwordHelper')}
                 />
               </Stack>
               <Button variant="outlined" component="label" size="small" sx={{ alignSelf: 'flex-start' }}>
-                Upload Photo
+                {t('chefs.uploadPhoto')}
                 <input
                   type="file" accept="image/*" hidden
                   onChange={e => setForm(f => ({ ...f, photo: e.target.files[0] ?? null }))}
@@ -171,9 +173,9 @@ export default function ChefsPage() {
             </Stack>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => { setAddOpen(false); setForm(EMPTY_FORM); }}>Cancel</Button>
+            <Button onClick={() => { setAddOpen(false); setForm(EMPTY_FORM); }}>{t('common.cancel')}</Button>
             <Button type="submit" variant="contained" disabled={submitting}>
-              {submitting ? <CircularProgress size={20} color="inherit" /> : 'Add Chef'}
+              {submitting ? <CircularProgress size={20} color="inherit" /> : t('chefs.addChef')}
             </Button>
           </DialogActions>
         </Box>
