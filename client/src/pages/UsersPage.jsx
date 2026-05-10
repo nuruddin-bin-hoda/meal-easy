@@ -41,7 +41,15 @@ export default function UsersPage() {
 
   const handleAction = async (userId, action) => {
     try {
-      await api.patch(`/users/${userId}`, { status: action });
+      if (action === 'rejected') {
+        await api.patch(`/users/${userId}/reject`);
+      } else if (action === 'active') {
+        await api.patch(`/users/${userId}/approve`);
+      } else if (action === 'blocked') {
+        await api.patch(`/users/${userId}/meal-block`, { blocked: true });
+      } else if (action === 'unblocked') {
+        await api.patch(`/users/${userId}/meal-block`, { blocked: false });
+      }
       notify(`User ${action}`);
       loadUsers();
     } catch (err) {
