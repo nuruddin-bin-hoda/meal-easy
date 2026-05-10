@@ -121,12 +121,12 @@ export default function UsersPage() {
                           </Button>
                         </>
                       )}
-                      {u.status === 'active' && (
+                      {u.status === 'active' && u.role !== 'superadmin' && (
                         <Button size="small" variant="outlined" color="warning" onClick={() => handleAction(u._id, 'blocked')}>
                           Block
                         </Button>
                       )}
-                      {u.status === 'blocked' && (
+                      {u.status === 'blocked' && u.role !== 'superadmin' && (
                         <Button size="small" variant="outlined" color="success" onClick={() => handleAction(u._id, 'active')}>
                           Unblock
                         </Button>
