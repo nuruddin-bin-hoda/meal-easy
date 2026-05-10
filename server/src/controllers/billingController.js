@@ -1,5 +1,6 @@
 const { BillingCycle, UserBill, AuditLog } = require('../models');
 const { calculateBilling } = require('../utils/billingEngine');
+const { sendPushToAllUsers } = require('../utils/pushService');
 
 const previewBilling = async (req, res, next) => {
   try {
@@ -61,6 +62,8 @@ const submitBilling = async (req, res, next) => {
       oldValue: null,
       newValue: billingCycle.toObject(),
     });
+
+    sendPushToAllUsers({ title: 'Monthly Billing Submitted', body: `Billing for ${month} has been finalised.` }).catch(() => {});
 
     res.status(201).json({ billingCycle });
   } catch (err) {

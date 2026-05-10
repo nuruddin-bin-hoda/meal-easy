@@ -1,4 +1,5 @@
 const { Deposit, AuditLog } = require('../models');
+const { sendPushToUser } = require('../utils/pushService');
 
 const recordDeposit = async (req, res, next) => {
   try {
@@ -11,6 +12,8 @@ const recordDeposit = async (req, res, next) => {
       note,
       recordedBy: req.user.userId,
     });
+
+    sendPushToUser(deposit.userId, { title: 'Deposit Recorded', body: `Your deposit of ৳${amount} has been recorded.` }).catch(() => {});
 
     await AuditLog.create({
       actorId: req.user.userId,

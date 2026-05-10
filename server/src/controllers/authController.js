@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { User, Chef } = require('../models');
 const { JWT_SECRET, JWT_EXPIRES_IN, NODE_ENV } = require('../config/env');
+const { sendPushToAdmins } = require('../utils/pushService');
 
 const COOKIE_OPTS = {
   httpOnly: true,
@@ -28,6 +29,8 @@ const register = async (req, res, next) => {
       status: 'pending',
       role: 'user',
     });
+
+    sendPushToAdmins({ title: 'New Registration', body: `${name} has requested to join.` }).catch(() => {});
 
     res.status(201).json({ message: 'Registration submitted. Awaiting approval.' });
   } catch (err) {

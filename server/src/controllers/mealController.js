@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const { MessSettings, MealToggle, AuditLog, User } = require('../models');
 const { isCutoffPassed, getTomorrowDateString, getCurrentBillingMonth } = require('../utils/mealHelpers');
+const { sendPushToUser } = require('../utils/pushService');
 
 const getActiveMealTypes = async () => {
   const settings = await MessSettings.findOneAndUpdate(
@@ -83,6 +84,10 @@ const setToggle = async (req, res, next) => {
       oldValue: oldToggle?.toObject() ?? null,
       newValue: updated.toObject(),
     });
+
+    if (guestCount > 0) {
+      sendPushToUser(req.user.userId, { title: 'Guest Meal Added', body: `${guestCount} guest meal(s) added for ${tomorrow}.` }).catch(() => {});
+    }
 
     res.json(updated);
   } catch (err) {

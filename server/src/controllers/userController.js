@@ -1,4 +1,5 @@
 const { User, BillingCycle, AuditLog } = require('../models');
+const { sendPushToUser } = require('../utils/pushService');
 
 const currentBillingMonth = () => {
   const now = new Date();
@@ -120,6 +121,8 @@ const approveUser = async (req, res, next) => {
 
     if (!user) return res.status(404).json({ message: 'User not found.' });
 
+    sendPushToUser(req.params.id, { title: 'Account Approved', body: 'Your Meal Easy account has been approved!' }).catch(() => {});
+
     res.json({ message: 'User approved.', user });
   } catch (err) {
     next(err);
@@ -136,6 +139,8 @@ const rejectUser = async (req, res, next) => {
     ).select('-passwordHash');
 
     if (!user) return res.status(404).json({ message: 'User not found.' });
+
+    sendPushToUser(req.params.id, { title: 'Account Update', body: 'Your registration was not approved.' }).catch(() => {});
 
     res.json({ message: 'User rejected.', user });
   } catch (err) {
