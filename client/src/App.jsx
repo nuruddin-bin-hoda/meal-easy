@@ -110,6 +110,14 @@ export default function App() {
         }
       />
       <Route
+        path="/reports"
+        element={
+          <PrivateRoute>
+            <Navigate to={`/reports/${new Date().toISOString().slice(0, 7)}`} replace />
+          </PrivateRoute>
+        }
+      />
+      <Route
         path="/reports/:month"
         element={
           <PrivateRoute>
