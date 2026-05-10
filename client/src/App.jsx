@@ -10,6 +10,9 @@ import PurchasesPage from './pages/PurchasesPage';
 import OtherCostsPage from './pages/OtherCostsPage';
 import DepositsPage from './pages/DepositsPage';
 import BillingPage from './pages/BillingPage';
+import StockPage from './pages/StockPage';
+import ChefsPage from './pages/ChefsPage';
+import ChefProfilePage from './pages/ChefProfilePage';
 
 export default function App() {
   return (
@@ -77,6 +80,30 @@ export default function App() {
         element={
           <PrivateRoute>
             <BillingPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/stock"
+        element={
+          <PrivateRoute>
+            <StockPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/admin/chefs"
+        element={
+          <PrivateRoute>
+            <ChefsPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/admin/chefs/:id"
+        element={
+          <PrivateRoute>
+            <ChefProfilePage />
           </PrivateRoute>
         }
       />
