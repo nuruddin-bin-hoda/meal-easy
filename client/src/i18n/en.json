@@ -14,7 +14,11 @@
     "reports": "Reports",
     "auditLogs": "Audit Logs",
     "notifications": "Notifications",
-    "logout": "Logout"
+    "logout": "Logout",
+    "users": "Users",
+    "settings": "Settings",
+    "profile": "My Profile",
+    "more": "More"
   },
   "auth": {
     "signIn": "Sign In",

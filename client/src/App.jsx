@@ -18,6 +18,13 @@ import ChefProfilePage from './pages/ChefProfilePage';
 import ReportPage from './pages/ReportPage';
 import AuditLogsPage from './pages/AuditLogsPage';
 import NotificationsPage from './pages/NotificationsPage';
+import ProfilePage from './pages/ProfilePage';
+import UsersPage from './pages/UsersPage';
+import SettingsPage from './pages/SettingsPage';
+
+function P({ children }) {
+  return <PrivateRoute>{children}</PrivateRoute>;
+}
 
 export default function App() {
   const { i18n } = useTranslation();
@@ -31,128 +38,44 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
+      {/* ── Public ── */}
+      <Route path="/login"    element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
-      <Route
-        path="/dashboard"
-        element={
-          <PrivateRoute>
-            <Dashboard />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/meals"
-        element={
-          <PrivateRoute>
-            <MealTogglePage />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/menu"
-        element={
-          <PrivateRoute>
-            <MenuPage />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/admin/menu"
-        element={
-          <PrivateRoute>
-            <SetMenuPage />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/admin/purchases"
-        element={
-          <PrivateRoute>
-            <PurchasesPage />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/admin/costs"
-        element={
-          <PrivateRoute>
-            <OtherCostsPage />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/admin/deposits"
-        element={
-          <PrivateRoute>
-            <DepositsPage />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/admin/billing"
-        element={
-          <PrivateRoute>
-            <BillingPage />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/stock"
-        element={
-          <PrivateRoute>
-            <StockPage />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/admin/chefs"
-        element={
-          <PrivateRoute>
-            <ChefsPage />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/admin/chefs/:id"
-        element={
-          <PrivateRoute>
-            <ChefProfilePage />
-          </PrivateRoute>
-        }
-      />
+
+      {/* ── Shared / all roles ── */}
+      <Route path="/dashboard"      element={<P><Dashboard /></P>} />
+      <Route path="/meals"          element={<P><MealTogglePage /></P>} />
+      <Route path="/menu"           element={<P><MenuPage /></P>} />
+      <Route path="/stock"          element={<P><StockPage /></P>} />
+      <Route path="/notifications"  element={<P><NotificationsPage /></P>} />
+      <Route path="/profile"        element={<P><ProfilePage /></P>} />
+
+      {/* ── Reports ── */}
       <Route
         path="/reports"
-        element={
-          <PrivateRoute>
-            <Navigate to={`/reports/${new Date().toISOString().slice(0, 7)}`} replace />
-          </PrivateRoute>
-        }
+        element={<P><Navigate to={`/reports/${new Date().toISOString().slice(0, 7)}`} replace /></P>}
       />
-      <Route
-        path="/reports/:month"
-        element={
-          <PrivateRoute>
-            <ReportPage />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/audit-logs"
-        element={
-          <PrivateRoute>
-            <AuditLogsPage />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/notifications"
-        element={
-          <PrivateRoute>
-            <NotificationsPage />
-          </PrivateRoute>
-        }
-      />
+      <Route path="/reports/:month" element={<P><ReportPage /></P>} />
+
+      {/* ── Admin — clean paths (used by sidebar nav) ── */}
+      <Route path="/users"          element={<P><UsersPage /></P>} />
+      <Route path="/purchases"      element={<P><PurchasesPage /></P>} />
+      <Route path="/deposits"       element={<P><DepositsPage /></P>} />
+      <Route path="/billing"        element={<P><BillingPage /></P>} />
+      <Route path="/chefs"          element={<P><ChefsPage /></P>} />
+      <Route path="/chefs/:id"      element={<P><ChefProfilePage /></P>} />
+      <Route path="/audit-logs"     element={<P><AuditLogsPage /></P>} />
+      <Route path="/settings"       element={<P><SettingsPage /></P>} />
+
+      {/* ── Legacy /admin/* paths — kept for backward compatibility ── */}
+      <Route path="/admin/menu"        element={<P><SetMenuPage /></P>} />
+      <Route path="/admin/purchases"   element={<P><PurchasesPage /></P>} />
+      <Route path="/admin/costs"       element={<P><OtherCostsPage /></P>} />
+      <Route path="/admin/deposits"    element={<P><DepositsPage /></P>} />
+      <Route path="/admin/billing"     element={<P><BillingPage /></P>} />
+      <Route path="/admin/chefs"       element={<P><ChefsPage /></P>} />
+      <Route path="/admin/chefs/:id"   element={<P><ChefProfilePage /></P>} />
+
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );

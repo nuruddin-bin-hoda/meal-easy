@@ -14,7 +14,11 @@
     "reports": "রিপোর্ট",
     "auditLogs": "অডিট লগ",
     "notifications": "বিজ্ঞপ্তি",
-    "logout": "লগআউট"
+    "logout": "লগআউট",
+    "users": "ব্যবহারকারী",
+    "settings": "সেটিংস",
+    "profile": "আমার প্রোফাইল",
+    "more": "আরও"
   },
   "auth": {
     "signIn": "সাইন ইন",
