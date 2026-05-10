@@ -33,6 +33,7 @@ app.use('/api/v1', require('./routes/otherCostRoutes'));
 app.use('/api/v1', require('./routes/depositRoutes'));
 app.use('/api/v1', require('./routes/billingRoutes'));
 app.use('/api/v1', require('./routes/stockRoutes'));
+app.use('/api/v1', require('./routes/dashboardRoutes'));
 
 app.use(errorHandler);
 
