@@ -7,7 +7,7 @@ const { sendPushToAdmins } = require('../utils/pushService');
 const COOKIE_OPTS = {
   httpOnly: true,
   sameSite: 'lax',
-  get secure() { return NODE_ENV === 'production'; },
+  get secure() { return NODE_ENV === 'production' && process.env.SECURE_COOKIES === 'true'; },
 };
 
 const signToken = (userId, role) =>
