@@ -5,4 +5,4 @@
 - [x] Phase 3 — Cost, Billing & Deposit (completed: 2026-05-10)
 - [x] Phase 4 — Stock & Chef Management (completed: 2026-05-10)
 - [x] Phase 5 — Dashboards & Reports (completed: 2026-05-10)
-- [ ] Phase 6 — Notifications & PWA (started: 2026-05-10)
+- [x] Phase 6 — Notifications & PWA (completed: 2026-05-10)
