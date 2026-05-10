@@ -331,7 +331,8 @@
     "newValue": "New Value",
     "noValueSnapshot": "No value snapshot recorded for this action.",
     "noEntries": "No audit log entries found.",
-    "allActors": "All actors"
+    "allActors": "All actors",
+    "exportPdf": "Export PDF"
   },
   "notifications": {
     "title": "Notifications",

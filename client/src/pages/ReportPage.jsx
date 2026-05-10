@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import {
   Alert, Box, Button, Card, CardContent, CircularProgress, Container,
   Divider, Grid, MenuItem, Stack, Table, TableBody, TableCell,
-  TableHead, TableRow, TextField, Tooltip, Typography,
+  TableHead, TableRow, TextField, Typography,
 } from '@mui/material';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import { useTranslation } from 'react-i18next';
@@ -89,7 +89,7 @@ export default function ReportPage() {
 
   const pdfHref = userId && month
     ? `${import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1'}/reports/${userId}/${month}/pdf`
-    : '#';
+    : null;
 
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
@@ -124,18 +124,18 @@ export default function ReportPage() {
             slotProps={{ inputLabel: { shrink: true } }}
           />
 
-          <Tooltip title={t('report.pdfComingSoon')}>
-            <span>
-              <Button
-                variant="outlined"
-                startIcon={<PictureAsPdfIcon />}
-                disabled
-                size="small"
-              >
-                {t('report.downloadPdf')}
-              </Button>
-            </span>
-          </Tooltip>
+          <Button
+            variant="outlined"
+            startIcon={<PictureAsPdfIcon />}
+            size="small"
+            disabled={!pdfHref}
+            component={pdfHref ? 'a' : 'button'}
+            href={pdfHref ?? undefined}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {t('report.downloadPdf')}
+          </Button>
         </Stack>
       </Stack>
 

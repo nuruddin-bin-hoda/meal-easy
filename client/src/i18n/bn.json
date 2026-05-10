@@ -331,7 +331,8 @@
     "newValue": "নতুন মান",
     "noValueSnapshot": "এই কার্যক্রমের জন্য কোনো মান রেকর্ড করা হয়নি।",
     "noEntries": "কোনো অডিট লগ এন্ট্রি পাওয়া যায়নি।",
-    "allActors": "সকল ব্যক্তি"
+    "allActors": "সকল ব্যক্তি",
+    "exportPdf": "PDF রপ্তানি"
   },
   "notifications": {
     "title": "বিজ্ঞপ্তি",

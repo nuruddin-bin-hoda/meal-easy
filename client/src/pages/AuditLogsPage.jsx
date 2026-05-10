@@ -6,6 +6,7 @@ import {
   MenuItem, Stack, TextField, Typography,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import { DataGrid } from '@mui/x-data-grid';
 import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
@@ -120,6 +121,17 @@ export default function AuditLogsPage() {
 
   const setField = (key) => (e) => setFilterForm((f) => ({ ...f, [key]: e.target.value }));
 
+  const buildExportHref = () => {
+    const base = `${import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1'}/audit-logs/export`;
+    const params = new URLSearchParams();
+    if (appliedFilters.startDate) params.set('startDate', appliedFilters.startDate);
+    if (appliedFilters.endDate) params.set('endDate', appliedFilters.endDate);
+    if (appliedFilters.action) params.set('action', appliedFilters.action);
+    if (isAdmin && appliedFilters.actorId) params.set('actorId', appliedFilters.actorId);
+    const qs = params.toString();
+    return qs ? `${base}?${qs}` : base;
+  };
+
   const columns = [
     {
       field: 'timestamp',
@@ -212,6 +224,19 @@ export default function AuditLogsPage() {
               <Button variant="outlined" size="small" onClick={handleReset}>
                 {t('common.reset')}
               </Button>
+              {isAdmin && (
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<PictureAsPdfIcon />}
+                  component="a"
+                  href={buildExportHref()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {t('audit.exportPdf')}
+                </Button>
+              )}
             </Stack>
           </Stack>
         </CardContent>

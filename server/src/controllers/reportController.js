@@ -1,14 +1,11 @@
 const mongoose = require('mongoose');
 const { User, BillingCycle, UserBill, MealToggle, Deposit } = require('../models');
 const { calculateBilling } = require('../utils/billingEngine');
+const { generateReportHTML } = require('../utils/reportTemplate');
+const { generatePDF } = require('../utils/pdfGenerator');
 
-const getReportData = async (req, res) => {
-  const { userId, month } = req.params;
-
-  if (req.user.role === 'user' && req.user.userId !== userId) {
-    return res.status(403).json({ message: 'Forbidden' });
-  }
-
+/** Shared logic: build report data object for a user + month. */
+const buildReportData = async (userId, month) => {
   const monthStart = new Date(`${month}-01`);
   const monthEnd = new Date(monthStart);
   monthEnd.setMonth(monthEnd.getMonth() + 1);
@@ -24,7 +21,7 @@ const getReportData = async (req, res) => {
     depositsBeforeAgg,
     prevLockedCycles,
   ] = await Promise.all([
-    User.findById(userId).select('name roomNumber'),
+    User.findById(userId).select('name roomNumber language'),
     BillingCycle.findOne({ billingMonth: month }),
     UserBill.findOne({ userId, billingMonth: month }),
     MealToggle.find({ userId, date: { $regex: `^${month}-` } }).sort({ date: 1, mealType: 1 }),
@@ -38,7 +35,7 @@ const getReportData = async (req, res) => {
     BillingCycle.find({ isLocked: true, billingMonth: { $lt: month } }).select('billingMonth'),
   ]);
 
-  if (!user) return res.status(404).json({ message: 'User not found' });
+  if (!user) return null;
 
   const isLocked = billingCycle?.isLocked ?? false;
   const isPreview = !isLocked;
@@ -64,7 +61,6 @@ const getReportData = async (req, res) => {
     }
   }
 
-  // Build day-by-day attendance from all toggle docs
   const attendanceMap = new Map();
   for (const t of toggles) {
     if (!attendanceMap.has(t.date)) attendanceMap.set(t.date, []);
@@ -81,7 +77,6 @@ const getReportData = async (req, res) => {
     }
   }
 
-  // Opening balance: deposits strictly before this month minus locked bills before this month
   const depositsBeforeTotal = depositsBeforeAgg[0]?.total ?? 0;
   const prevLockedMonths = prevLockedCycles.map((c) => c.billingMonth);
   const billsBeforeAgg = prevLockedMonths.length > 0
@@ -92,12 +87,12 @@ const getReportData = async (req, res) => {
     : [];
   const billsBeforeTotal = billsBeforeAgg[0]?.total ?? 0;
   const openingBalance = depositsBeforeTotal - billsBeforeTotal;
-
   const depositsThisMonthTotal = depositsThisMonth.reduce((sum, d) => sum + d.amount, 0);
   const closingBalance = openingBalance + depositsThisMonthTotal - totalBill;
 
-  res.json({
+  return {
     user: { name: user.name, roomNumber: user.roomNumber },
+    language: user.language ?? 'en',
     billingMonth: month,
     mealAttendance,
     totalMealsByType,
@@ -110,7 +105,41 @@ const getReportData = async (req, res) => {
     openingBalance,
     closingBalance,
     isPreview,
-  });
+  };
 };
 
-module.exports = { getReportData };
+const getReportData = async (req, res) => {
+  const { userId, month } = req.params;
+
+  if (req.user.role === 'user' && req.user.userId !== userId) {
+    return res.status(403).json({ message: 'Forbidden' });
+  }
+
+  const data = await buildReportData(userId, month);
+  if (!data) return res.status(404).json({ message: 'User not found' });
+
+  res.json(data);
+};
+
+const downloadReportPDF = async (req, res) => {
+  const { userId, month } = req.params;
+
+  if (req.user.role === 'user' && req.user.userId !== userId) {
+    return res.status(403).json({ message: 'Forbidden' });
+  }
+
+  const data = await buildReportData(userId, month);
+  if (!data) return res.status(404).json({ message: 'User not found' });
+
+  const html = generateReportHTML(data, data.language);
+  const pdfBuffer = await generatePDF(html);
+
+  res.set({
+    'Content-Type': 'application/pdf',
+    'Content-Disposition': `attachment; filename="report-${userId}-${month}.pdf"`,
+    'Content-Length': pdfBuffer.length,
+  });
+  res.send(pdfBuffer);
+};
+
+module.exports = { getReportData, downloadReportPDF };
