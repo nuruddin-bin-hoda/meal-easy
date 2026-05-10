@@ -6,7 +6,11 @@ const connectDB = require('./config/db');
 const { PORT, CLIENT_URL, NODE_ENV } = require('./config/env');
 const errorHandler = require('./middleware/errorHandler');
 
-connectDB();
+connectDB().then(() => {
+  if (NODE_ENV !== 'test') {
+    require('./jobs/cronJobs').startCronJobs();
+  }
+});
 
 const app = express();
 
