@@ -36,6 +36,7 @@ app.use('/api/v1', require('./routes/stockRoutes'));
 app.use('/api/v1', require('./routes/dashboardRoutes'));
 app.use('/api/v1', require('./routes/reportRoutes'));
 app.use('/api/v1', require('./routes/auditLogRoutes'));
+app.use('/api/v1', require('./routes/notificationRoutes'));
 
 app.use(errorHandler);
 
