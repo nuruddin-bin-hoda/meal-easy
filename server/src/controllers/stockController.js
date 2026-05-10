@@ -1,4 +1,5 @@
 const { Stock, AuditLog } = require('../models');
+const { sendPushToAdmins } = require('../utils/pushService');
 
 const listStock = async (req, res, next) => {
   try {
@@ -45,6 +46,13 @@ const updateStockQuantity = async (req, res, next) => {
       oldValue: { quantity: oldQuantity },
       newValue: { quantity },
     });
+
+    if (existing.quantity <= existing.lowThreshold) {
+      sendPushToAdmins({
+        title: 'Low Stock Alert',
+        body: `${existing.itemName} is running low (${existing.quantity} ${existing.unit} remaining).`,
+      }).catch(() => {});
+    }
 
     res.json({ stockItem: { ...existing.toObject(), isLow: existing.quantity <= existing.lowThreshold } });
   } catch (err) {
