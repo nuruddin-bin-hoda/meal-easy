@@ -15,6 +15,7 @@ import ChefsPage from './pages/ChefsPage';
 import ChefProfilePage from './pages/ChefProfilePage';
 import ReportPage from './pages/ReportPage';
 import AuditLogsPage from './pages/AuditLogsPage';
+import NotificationsPage from './pages/NotificationsPage';
 
 export default function App() {
   return (
@@ -130,6 +131,14 @@ export default function App() {
         element={
           <PrivateRoute>
             <AuditLogsPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/notifications"
+        element={
+          <PrivateRoute>
+            <NotificationsPage />
           </PrivateRoute>
         }
       />
