@@ -18,7 +18,8 @@
     "users": "Users",
     "settings": "Settings",
     "profile": "My Profile",
-    "more": "More"
+    "more": "More",
+    "setMenu": "Set Menu"
   },
   "auth": {
     "signIn": "Sign In",

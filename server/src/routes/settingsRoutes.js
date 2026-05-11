@@ -10,7 +10,6 @@ const router = Router();
 router.get(
   '/settings',
   authenticate,
-  authorize(['admin', 'superadmin']),
   getSettings,
 );
 

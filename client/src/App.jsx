@@ -59,7 +59,9 @@ export default function App() {
 
       {/* ── Admin — clean paths (used by sidebar nav) ── */}
       <Route path="/users"          element={<P><UsersPage /></P>} />
+      <Route path="/menu/set"       element={<P><SetMenuPage /></P>} />
       <Route path="/purchases"      element={<P><PurchasesPage /></P>} />
+      <Route path="/costs"          element={<P><OtherCostsPage /></P>} />
       <Route path="/deposits"       element={<P><DepositsPage /></P>} />
       <Route path="/billing"        element={<P><BillingPage /></P>} />
       <Route path="/chefs"          element={<P><ChefsPage /></P>} />

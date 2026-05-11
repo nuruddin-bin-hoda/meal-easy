@@ -121,10 +121,7 @@ export default function AppLayout({ children }) {
   const currentLang  = (i18n.language || 'en').startsWith('bn') ? 'bn' : 'en';
 
   // Determine which nav item matches the current route
-  const isActive = (path) => {
-    if (path === '/dashboard') return location.pathname === '/dashboard';
-    return location.pathname === path || location.pathname.startsWith(`${path}/`);
-  };
+  const isActive = (path) => location.pathname === path;
 
   // Active value for BottomNavigation
   const activeBottom = (() => {
