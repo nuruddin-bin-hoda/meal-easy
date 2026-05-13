@@ -133,10 +133,13 @@
     "failedToLoad": "Failed to load dashboard data."
   },
   "meal": {
+    "todayMeals": "Today's Meals",
     "tomorrowMeals": "Tomorrow's Meals",
     "noMealTypes": "No meal types have been configured yet.",
+    "allMealsLocked": "All meals are locked for today. Check back later.",
+    "cutoffAt": "Cutoff: {{time}}",
     "summary": "Summary",
-    "summaryText": "You have <b>{{meals}} meal(s)</b> and <b>{{guests}} guest meal(s)</b> scheduled for tomorrow.",
+    "summaryText": "You have <b>{{meals}} meal(s)</b> and <b>{{guests}} guest meal(s)</b> scheduled for today.",
     "failedToLoad": "Failed to load meal data",
     "saved": "Saved",
     "cutoffPassed": "Cutoff passed. Toggles are locked."

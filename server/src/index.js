@@ -16,14 +16,13 @@ async function runStartupChecks() {
   const settings = await MessSettings.findOne();
   if (!settings) {
     await MessSettings.create({
-      cutoffTime: '22:00',
       cutoffReminderMinutes: 30,
       guestMealMonthlyLimit: 5,
       lowBalanceThreshold: 100,
       mealTypes: [
-        { name: 'breakfast', isActive: false, isAutoEnabled: false },
-        { name: 'lunch',     isActive: true,  isAutoEnabled: false },
-        { name: 'dinner',    isActive: true,  isAutoEnabled: false },
+        { name: 'Breakfast', isActive: true,  isAutoEnabled: false, cutoffTime: '22:00' },
+        { name: 'Lunch',     isActive: true,  isAutoEnabled: false, cutoffTime: '09:00' },
+        { name: 'Dinner',    isActive: true,  isAutoEnabled: false, cutoffTime: '15:00' },
       ],
     });
     console.log('[startup] MessSettings singleton created with defaults.');

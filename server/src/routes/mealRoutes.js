@@ -3,11 +3,12 @@ const { body } = require('express-validator');
 const authenticate = require('../middleware/authenticate');
 const authorize = require('../middleware/authorize');
 const validate = require('../middleware/validate');
-const { getTomorrowToggles, setToggle, getMealHistory, getMealCount } = require('../controllers/mealController');
+const { getTodayToggles, setToggle, getMealHistory, getMealCount } = require('../controllers/mealController');
 
 const router = Router();
 
-router.get('/meals/tomorrow', authenticate, getTomorrowToggles);
+router.get('/meals/today',    authenticate, getTodayToggles);
+router.get('/meals/tomorrow', authenticate, getTodayToggles); // backward-compat alias
 
 router.post(
   '/meals/toggle',

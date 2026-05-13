@@ -6,12 +6,7 @@ const {
 } = require('../models');
 const { calculateBilling } = require('../utils/billingEngine');
 const { getUserBalance } = require('../utils/balanceHelper');
-const { getCurrentBillingMonth, isCutoffPassed, getTomorrowDateString } = require('../utils/mealHelpers');
-
-function getTodayDateString() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
+const { getCurrentBillingMonth, isCutoffPassed, getTodayDateString, getTomorrowDateString } = require('../utils/mealHelpers');
 
 const getAdminDashboard = async (req, res) => {
   const currentMonth = getCurrentBillingMonth();
@@ -124,13 +119,14 @@ const getAdminDashboard = async (req, res) => {
 const getUserDashboard = async (req, res) => {
   const userId = req.user.userId;
   const currentMonth = getCurrentBillingMonth();
+  const todayStr = getTodayDateString();
   const tomorrowStr = getTomorrowDateString();
 
-  const [settings, tomorrowMenuDocs, tomorrowToggles, billing, myMealCountAgg, lowStockItems, recentNotifications] =
+  const [settings, tomorrowMenuDocs, existingToggles, billing, myMealCountAgg, lowStockItems, recentNotifications] =
     await Promise.all([
       MessSettings.findOne(),
       Menu.find({ date: tomorrowStr }),
-      MealToggle.find({ userId, date: tomorrowStr }).select('mealType isOn guestCount'),
+      MealToggle.find({ userId, date: todayStr }).select('mealType isOn guestCount'),
       calculateBilling(currentMonth),
       MealToggle.aggregate([
         { $match: { userId: new mongoose.Types.ObjectId(userId), date: { $regex: `^${currentMonth}-` }, isOn: true } },
@@ -143,17 +139,20 @@ const getUserDashboard = async (req, res) => {
   const balance = await getUserBalance(userId);
 
   const tomorrowMenu = tomorrowMenuDocs.map((m) => ({ mealType: m.mealType, items: m.items }));
-  const cutoffTime = settings?.cutoffTime ?? '22:00';
+
+  const activeMealTypes = (settings?.mealTypes ?? []).filter(mt => mt.isActive);
+  const byType = Object.fromEntries(existingToggles.map(t => [t.mealType, t]));
+  const todayToggles = activeMealTypes.map(mt => ({
+    mealType: mt.name,
+    isOn: byType[mt.name]?.isOn ?? false,
+    guestCount: byType[mt.name]?.guestCount ?? 0,
+    cutoffTime: mt.cutoffTime ?? '22:00',
+    isCutoffPassed: isCutoffPassed(mt.cutoffTime ?? '22:00'),
+  }));
 
   res.json({
     tomorrowMenu,
-    tomorrowToggles: tomorrowToggles.map((t) => ({
-      mealType: t.mealType,
-      isOn: t.isOn,
-      guestCount: t.guestCount,
-    })),
-    cutoffTime,
-    isCutoffPassed: isCutoffPassed(cutoffTime),
+    todayToggles,
     balance,
     predictedMealRate: billing.mealRate,
     myMealCountThisMonth: myMealCountAgg[0]?.count ?? 0,

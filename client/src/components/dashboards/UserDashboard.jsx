@@ -12,15 +12,32 @@ import { useTranslation } from 'react-i18next';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 
-function ToggleCard({ toggle, menuItems = [], disabled, saving, onToggle, onGuestStep, guestMealsLabel }) {
+function ToggleCard({ toggle, menuItems = [], mealBlocked, saving, onToggle, onGuestStep, guestMealsLabel }) {
+  const { t } = useTranslation();
+  const disabled = toggle.isCutoffPassed || mealBlocked;
+
   return (
-    <Card elevation={1} sx={{ mb: 1.5 }}>
+    <Card elevation={1} sx={{ mb: 1.5, opacity: toggle.isCutoffPassed ? 0.8 : 1 }}>
       <CardContent sx={{ pb: '12px !important', pt: 1.5, px: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 40 }}>
-          <Typography variant="subtitle2" fontWeight={600} sx={{ textTransform: 'capitalize' }}>
-            {toggle.mealType}
-          </Typography>
-          {saving ? (
+          <Box>
+            <Typography variant="subtitle2" fontWeight={600} sx={{ textTransform: 'capitalize' }}>
+              {toggle.mealType}
+            </Typography>
+            {toggle.cutoffTime && (
+              <Typography
+                variant="caption"
+                color={toggle.isCutoffPassed ? 'error.main' : 'text.secondary'}
+                sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}
+              >
+                {toggle.isCutoffPassed && <LockOutlinedIcon sx={{ fontSize: 11 }} />}
+                {t('meal.cutoffAt', { time: toggle.cutoffTime })}
+              </Typography>
+            )}
+          </Box>
+          {toggle.isCutoffPassed ? (
+            <LockOutlinedIcon fontSize="small" color="disabled" />
+          ) : saving ? (
             <CircularProgress size={22} sx={{ mr: 0.5 }} />
           ) : (
             <Switch
@@ -42,7 +59,7 @@ function ToggleCard({ toggle, menuItems = [], disabled, saving, onToggle, onGues
           </Box>
         )}
 
-        {toggle.isOn && (
+        {toggle.isOn && !toggle.isCutoffPassed && (
           <>
             <Divider sx={{ my: 1 }} />
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -94,7 +111,7 @@ export default function UserDashboard() {
     api.get('/dashboard/user')
       .then((res) => {
         setData(res.data);
-        setToggles(res.data.tomorrowToggles ?? []);
+        setToggles(res.data.todayToggles ?? []);
       })
       .catch(() => setError(t('dashboard.failedToLoad')))
       .finally(() => setLoading(false));
@@ -145,13 +162,11 @@ export default function UserDashboard() {
     predictedMealRate = 0,
     myMealCountThisMonth = 0,
     tomorrowMenu = [],
-    isCutoffPassed = false,
     lowStockWarnings = [],
     recentNotifications = [],
   } = data;
 
   const menuMap = Object.fromEntries(tomorrowMenu.map((m) => [m.mealType, m.items]));
-  const isDisabled = isCutoffPassed || !!user?.mealBlocked;
   const balanceColor = balance >= 0 ? 'success.main' : 'error.main';
   const balanceBg = balance >= 0 ? 'success.50' : 'error.50';
 
@@ -261,20 +276,9 @@ export default function UserDashboard() {
         <Grid size={{ xs: 12, md: 7 }}>
           <Card elevation={2}>
             <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <Typography variant="subtitle1" fontWeight={700}>
-                  {t('dashboard.tomorrowMeals')}
-                </Typography>
-                {isCutoffPassed && (
-                  <Chip
-                    icon={<LockOutlinedIcon />}
-                    label={t('dashboard.cutoffPassed')}
-                    size="small"
-                    color="warning"
-                    variant="outlined"
-                  />
-                )}
-              </Box>
+              <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>
+                {t('meal.todayMeals')}
+              </Typography>
 
               {toggles.length === 0 ? (
                 <Typography variant="body2" color="text.secondary">
@@ -285,7 +289,7 @@ export default function UserDashboard() {
                   key={toggle.mealType}
                   toggle={toggle}
                   menuItems={menuMap[toggle.mealType] ?? []}
-                  disabled={isDisabled}
+                  mealBlocked={!!user?.mealBlocked}
                   saving={!!saving[toggle.mealType]}
                   onToggle={handleToggle}
                   onGuestStep={handleGuestStep}

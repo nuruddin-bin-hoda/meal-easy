@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const { MessSettings, MealToggle, AuditLog, User } = require('../models');
-const { isCutoffPassed, getTomorrowDateString, getCurrentBillingMonth } = require('../utils/mealHelpers');
+const { isCutoffPassed, getTodayDateString, getCurrentBillingMonth } = require('../utils/mealHelpers');
 const { sendPushToUser } = require('../utils/pushService');
 
 const getActiveMealTypes = async () => {
@@ -12,21 +12,23 @@ const getActiveMealTypes = async () => {
   return { settings, activeMealTypes: (settings.mealTypes ?? []).filter(mt => mt.isActive) };
 };
 
-const getTomorrowToggles = async (req, res, next) => {
+const getTodayToggles = async (req, res, next) => {
   try {
-    const tomorrow = getTomorrowDateString();
+    const today = getTodayDateString();
     const { activeMealTypes } = await getActiveMealTypes();
 
-    const existing = await MealToggle.find({ userId: req.user.userId, date: tomorrow });
+    const existing = await MealToggle.find({ userId: req.user.userId, date: today });
     const byType = Object.fromEntries(existing.map(t => [t.mealType, t]));
 
     const toggles = activeMealTypes.map(mt => ({
       mealType: mt.name,
       isOn: byType[mt.name]?.isOn ?? false,
       guestCount: byType[mt.name]?.guestCount ?? 0,
+      cutoffTime: mt.cutoffTime ?? '22:00',
+      isCutoffPassed: isCutoffPassed(mt.cutoffTime ?? '22:00'),
     }));
 
-    res.json({ date: tomorrow, toggles });
+    res.json({ date: today, toggles });
   } catch (err) {
     next(err);
   }
@@ -42,13 +44,18 @@ const setToggle = async (req, res, next) => {
       return res.status(403).json({ message: 'Your meal access is blocked' });
     }
 
-    const { settings } = await getActiveMealTypes();
-    if (isCutoffPassed(settings.cutoffTime)) {
+    const { settings, activeMealTypes } = await getActiveMealTypes();
+    const mealTypeSetting = activeMealTypes.find(mt => mt.name === mealType);
+    if (!mealTypeSetting) {
+      return res.status(400).json({ message: 'Invalid meal type' });
+    }
+
+    if (isCutoffPassed(mealTypeSetting.cutoffTime ?? '22:00')) {
       return res.status(400).json({ message: 'Meal toggle cutoff has passed' });
     }
 
-    const tomorrow = getTomorrowDateString();
-    const oldToggle = await MealToggle.findOne({ userId: req.user.userId, date: tomorrow, mealType });
+    const today = getTodayDateString();
+    const oldToggle = await MealToggle.findOne({ userId: req.user.userId, date: today, mealType });
 
     if (guestCount > 0) {
       const currentMonth = getCurrentBillingMonth();
@@ -70,7 +77,7 @@ const setToggle = async (req, res, next) => {
     }
 
     const updated = await MealToggle.findOneAndUpdate(
-      { userId: req.user.userId, date: tomorrow, mealType },
+      { userId: req.user.userId, date: today, mealType },
       { $set: { isOn, guestCount } },
       { upsert: true, new: true },
     );
@@ -86,7 +93,7 @@ const setToggle = async (req, res, next) => {
     });
 
     if (guestCount > 0) {
-      sendPushToUser(req.user.userId, { title: 'Guest Meal Added', body: `${guestCount} guest meal(s) added for ${tomorrow}.` }).catch(() => {});
+      sendPushToUser(req.user.userId, { title: 'Guest Meal Added', body: `${guestCount} guest meal(s) added for ${today}.` }).catch(() => {});
     }
 
     res.json(updated);
@@ -155,4 +162,4 @@ const getMealCount = async (req, res, next) => {
   }
 };
 
-module.exports = { getTomorrowToggles, setToggle, getMealHistory, getMealCount };
+module.exports = { getTodayToggles, setToggle, getMealHistory, getMealCount };

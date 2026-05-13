@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  Alert, Box, Button, Card, CardContent, Chip, CircularProgress,
+  Alert, Box, Button, Card, CardContent, CircularProgress,
   Container, Divider, IconButton, Snackbar, Stack, TextField, Typography,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -14,6 +14,7 @@ export default function SettingsPage() {
   const [loading, setLoading]   = useState(true);
   const [saving, setSaving]     = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [newMealType, setNewMealType] = useState('');
 
   const notify = (message, severity = 'success') => setSnackbar({ open: true, message, severity });
 
@@ -28,7 +29,7 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       const res = await api.patch('/settings', {
-        cutoffTime: settings.cutoffTime,
+        cutoffReminderMinutes: settings.cutoffReminderMinutes,
         guestMealMonthlyLimit: settings.guestMealMonthlyLimit,
         mealTypes: settings.mealTypes,
       });
@@ -41,7 +42,7 @@ export default function SettingsPage() {
     }
   };
 
-  const toggleMealType = (name) => {
+  const toggleMealTypeActive = (name) => {
     setSettings((s) => ({
       ...s,
       mealTypes: s.mealTypes.map((mt) =>
@@ -50,11 +51,20 @@ export default function SettingsPage() {
     }));
   };
 
+  const updateMealTypeCutoff = (name, cutoffTime) => {
+    setSettings((s) => ({
+      ...s,
+      mealTypes: s.mealTypes.map((mt) =>
+        mt.name === name ? { ...mt, cutoffTime } : mt,
+      ),
+    }));
+  };
+
   const addMealType = (name) => {
     if (!name.trim() || settings.mealTypes.some((mt) => mt.name === name.trim())) return;
     setSettings((s) => ({
       ...s,
-      mealTypes: [...s.mealTypes, { name: name.trim(), isActive: true }],
+      mealTypes: [...s.mealTypes, { name: name.trim(), isActive: true, isAutoEnabled: false, cutoffTime: '22:00' }],
     }));
   };
 
@@ -64,8 +74,6 @@ export default function SettingsPage() {
       mealTypes: s.mealTypes.filter((mt) => mt.name !== name),
     }));
   };
-
-  const [newMealType, setNewMealType] = useState('');
 
   if (loading) {
     return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}><CircularProgress /></Box>;
@@ -85,12 +93,16 @@ export default function SettingsPage() {
             <Divider sx={{ mb: 2 }} />
             <Stack spacing={2}>
               <TextField
-                label="Meal cutoff time (HH:MM)"
-                value={settings.cutoffTime ?? '22:00'}
-                onChange={(e) => setSettings((s) => ({ ...s, cutoffTime: e.target.value }))}
+                label="Cutoff reminder (minutes before)"
+                type="number"
+                value={settings.cutoffReminderMinutes ?? 30}
+                onChange={(e) =>
+                  setSettings((s) => ({ ...s, cutoffReminderMinutes: Number(e.target.value) }))
+                }
                 size="small"
-                sx={{ maxWidth: 220 }}
-                placeholder="22:00"
+                sx={{ maxWidth: 260 }}
+                slotProps={{ htmlInput: { min: 0 } }}
+                helperText="Send push notification this many minutes before each meal cutoff"
               />
               <TextField
                 label="Guest meal monthly limit"
@@ -100,7 +112,7 @@ export default function SettingsPage() {
                   setSettings((s) => ({ ...s, guestMealMonthlyLimit: Number(e.target.value) }))
                 }
                 size="small"
-                sx={{ maxWidth: 220 }}
+                sx={{ maxWidth: 260 }}
                 slotProps={{ htmlInput: { min: 0 } }}
               />
             </Stack>
@@ -112,20 +124,59 @@ export default function SettingsPage() {
           <CardContent>
             <Typography variant="subtitle1" fontWeight={700} gutterBottom>Meal Types</Typography>
             <Divider sx={{ mb: 2 }} />
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+
+            <Stack spacing={1.5} sx={{ mb: 2 }}>
               {(settings.mealTypes ?? []).map((mt) => (
-                <Chip
+                <Box
                   key={mt.name}
-                  label={mt.name}
-                  color={mt.isActive ? 'success' : 'default'}
-                  variant={mt.isActive ? 'filled' : 'outlined'}
-                  onClick={() => toggleMealType(mt.name)}
-                  onDelete={() => removeMealType(mt.name)}
-                  deleteIcon={<DeleteIcon />}
-                  sx={{ textTransform: 'capitalize' }}
-                />
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    flexWrap: 'wrap',
+                    p: 1.25,
+                    borderRadius: 1.5,
+                    border: '1px solid',
+                    borderColor: mt.isActive ? 'success.light' : 'divider',
+                    bgcolor: mt.isActive ? 'success.50' : 'transparent',
+                  }}
+                >
+                  <Button
+                    size="small"
+                    variant={mt.isActive ? 'contained' : 'outlined'}
+                    color={mt.isActive ? 'success' : 'inherit'}
+                    onClick={() => toggleMealTypeActive(mt.name)}
+                    sx={{ minWidth: 90, textTransform: 'capitalize' }}
+                  >
+                    {mt.name}
+                  </Button>
+
+                  <TextField
+                    label="Cutoff time"
+                    type="time"
+                    size="small"
+                    value={mt.cutoffTime ?? '22:00'}
+                    onChange={(e) => updateMealTypeCutoff(mt.name, e.target.value)}
+                    sx={{ width: 150 }}
+                    slotProps={{ htmlInput: { step: 60 } }}
+                  />
+
+                  <Typography variant="caption" color="text.secondary" sx={{ flex: 1, minWidth: 80 }}>
+                    {mt.isActive ? 'Active' : 'Inactive'}
+                  </Typography>
+
+                  <IconButton
+                    size="small"
+                    onClick={() => removeMealType(mt.name)}
+                    color="error"
+                    aria-label={`Remove ${mt.name}`}
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Box>
               ))}
-            </Box>
+            </Stack>
+
             <Stack direction="row" spacing={1} sx={{ maxWidth: 320 }}>
               <TextField
                 size="small"

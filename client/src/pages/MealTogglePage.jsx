@@ -10,13 +10,6 @@ import { useTranslation, Trans } from 'react-i18next';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 
-function isCutoffPassed(cutoffTime) {
-  if (!cutoffTime) return false;
-  const [hh, mm] = cutoffTime.split(':').map(Number);
-  const now = new Date();
-  return now.getHours() * 60 + now.getMinutes() >= hh * 60 + mm;
-}
-
 function formatDate(dateStr) {
   if (!dateStr) return '';
   return new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, {
@@ -24,15 +17,32 @@ function formatDate(dateStr) {
   });
 }
 
-function MealCard({ toggle, menuItems, disabled, saving, onToggle, onGuestStep, guestMealsLabel }) {
+function MealCard({ toggle, menuItems, mealBlocked, saving, onToggle, onGuestStep, guestMealsLabel, cutoffLabel }) {
+  const { t } = useTranslation();
+  const disabled = toggle.isCutoffPassed || mealBlocked;
+
   return (
-    <Card elevation={2}>
+    <Card elevation={2} sx={{ opacity: toggle.isCutoffPassed ? 0.8 : 1 }}>
       <CardContent sx={{ pb: '16px !important' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 48 }}>
-          <Typography variant="h6" fontWeight={600}>
-            {toggle.mealType}
-          </Typography>
-          {saving ? (
+          <Box>
+            <Typography variant="h6" fontWeight={600}>
+              {toggle.mealType}
+            </Typography>
+            {toggle.cutoffTime && (
+              <Typography
+                variant="caption"
+                color={toggle.isCutoffPassed ? 'error.main' : 'text.secondary'}
+                sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+              >
+                {toggle.isCutoffPassed && <LockOutlinedIcon sx={{ fontSize: 12 }} />}
+                {t('meal.cutoffAt', { time: toggle.cutoffTime })}
+              </Typography>
+            )}
+          </Box>
+          {toggle.isCutoffPassed ? (
+            <LockOutlinedIcon color="disabled" />
+          ) : saving ? (
             <CircularProgress size={24} sx={{ mr: 1 }} />
           ) : (
             <Switch
@@ -53,7 +63,7 @@ function MealCard({ toggle, menuItems, disabled, saving, onToggle, onGuestStep, 
           </Box>
         )}
 
-        {toggle.isOn && (
+        {toggle.isOn && !toggle.isCutoffPassed && (
           <>
             <Divider sx={{ my: 1.5 }} />
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -96,8 +106,7 @@ export default function MealTogglePage() {
   const { t } = useTranslation();
   const [toggles, setToggles] = useState([]);
   const [menus, setMenus] = useState({});
-  const [tomorrowDate, setTomorrowDate] = useState('');
-  const [cutoffPassed, setCutoffPassed] = useState(false);
+  const [todayDate, setTodayDate] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState({});
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
@@ -105,14 +114,12 @@ export default function MealTogglePage() {
 
   useEffect(() => {
     Promise.all([
-      api.get('/meals/tomorrow'),
+      api.get('/meals/today'),
       api.get('/menus/tomorrow'),
-      api.get('/settings'),
-    ]).then(([toggleRes, menuRes, settingsRes]) => {
+    ]).then(([toggleRes, menuRes]) => {
       setToggles(toggleRes.data.toggles);
-      setTomorrowDate(toggleRes.data.date);
+      setTodayDate(toggleRes.data.date);
       setMenus(menuRes.data.menus ?? {});
-      setCutoffPassed(isCutoffPassed(settingsRes.data.cutoffTime));
     }).catch(() => {
       setSnackbar({ open: true, message: t('meal.failedToLoad'), severity: 'error' });
     }).finally(() => setLoading(false));
@@ -155,9 +162,9 @@ export default function MealTogglePage() {
     }, 600);
   }, [toggles, save]);
 
+  const allLocked = toggles.length > 0 && toggles.every(t => t.isCutoffPassed);
   const mealOnCount = toggles.filter(t => t.isOn).length;
   const guestTotal = toggles.reduce((sum, t) => sum + (t.isOn ? (t.guestCount ?? 0) : 0), 0);
-  const isDisabled = cutoffPassed || !!user?.mealBlocked;
 
   if (loading) {
     return (
@@ -170,10 +177,10 @@ export default function MealTogglePage() {
   return (
     <Container maxWidth="sm" sx={{ py: 3, px: 2 }}>
       <Typography variant="h5" fontWeight={700} gutterBottom>
-        {t('meal.tomorrowMeals')}
+        {t('meal.todayMeals')}
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        {formatDate(tomorrowDate)}
+        {formatDate(todayDate)}
       </Typography>
 
       {user?.mealBlocked && (
@@ -182,9 +189,9 @@ export default function MealTogglePage() {
         </Alert>
       )}
 
-      {cutoffPassed && !user?.mealBlocked && (
-        <Alert severity="warning" icon={<LockOutlinedIcon />} sx={{ mb: 2 }}>
-          {t('meal.cutoffPassed')}
+      {allLocked && !user?.mealBlocked && (
+        <Alert severity="info" icon={<LockOutlinedIcon />} sx={{ mb: 2 }}>
+          {t('meal.allMealsLocked')}
         </Alert>
       )}
 
@@ -194,7 +201,7 @@ export default function MealTogglePage() {
             key={toggle.mealType}
             toggle={toggle}
             menuItems={menus[toggle.mealType] ?? []}
-            disabled={isDisabled}
+            mealBlocked={!!user?.mealBlocked}
             saving={!!saving[toggle.mealType]}
             onToggle={handleToggle}
             onGuestStep={handleGuestStep}

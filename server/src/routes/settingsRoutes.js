@@ -18,10 +18,6 @@ router.patch(
   authenticate,
   authorize(['admin', 'superadmin']),
   [
-    body('cutoffTime')
-      .optional()
-      .matches(/^\d{2}:\d{2}$/)
-      .withMessage('cutoffTime must be HH:MM format.'),
     body('cutoffReminderMinutes')
       .optional()
       .isInt({ min: 0 })
@@ -51,6 +47,10 @@ router.patch(
       .optional()
       .isBoolean()
       .withMessage('mealTypes[].isAutoEnabled must be boolean.'),
+    body('mealTypes.*.cutoffTime')
+      .optional()
+      .matches(/^\d{2}:\d{2}$/)
+      .withMessage('mealTypes[].cutoffTime must be HH:MM format.'),
   ],
   validate,
   updateSettings,

@@ -40,7 +40,16 @@ async function seed() {
   if (settings) {
     console.log('MessSettings already exists — skipping.');
   } else {
-    await MessSettings.create({});
+    await MessSettings.create({
+      cutoffReminderMinutes: 30,
+      guestMealMonthlyLimit: 5,
+      lowBalanceThreshold: 100,
+      mealTypes: [
+        { name: 'Breakfast', isActive: true,  isAutoEnabled: false, cutoffTime: '22:00' },
+        { name: 'Lunch',     isActive: true,  isAutoEnabled: false, cutoffTime: '09:00' },
+        { name: 'Dinner',    isActive: true,  isAutoEnabled: false, cutoffTime: '15:00' },
+      ],
+    });
     console.log('MessSettings created with defaults.');
   }
 

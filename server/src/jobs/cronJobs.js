@@ -3,25 +3,29 @@ const { MessSettings, Stock } = require('../models');
 const { sendPushToAllUsers, sendPushToAdmins } = require('../utils/pushService');
 
 function startCronJobs() {
-  // Job 1: Cutoff Reminder — checks every minute
+  // Job 1: Per-meal-type cutoff reminder — checks every minute
   cron.schedule('* * * * *', async () => {
     try {
       const settings = await MessSettings.findOne();
-      if (!settings?.cutoffTime || !settings?.cutoffReminderMinutes) return;
-
-      const [hh, mm] = settings.cutoffTime.split(':').map(Number);
-      const cutoffTotalMins = hh * 60 + mm;
-      const reminderTotalMins = cutoffTotalMins - settings.cutoffReminderMinutes;
-      if (reminderTotalMins < 0) return;
+      if (!settings?.cutoffReminderMinutes || !settings?.mealTypes?.length) return;
 
       const now = new Date();
       const nowTotalMins = now.getHours() * 60 + now.getMinutes();
 
-      if (nowTotalMins === reminderTotalMins) {
-        await sendPushToAllUsers({
-          title: 'Meal Toggle Reminder',
-          body: `Meal toggle closes at ${settings.cutoffTime}. Don't forget!`,
-        });
+      for (const mt of settings.mealTypes) {
+        if (!mt.isActive || !mt.cutoffTime) continue;
+
+        const [hh, mm] = mt.cutoffTime.split(':').map(Number);
+        const cutoffTotalMins = hh * 60 + mm;
+        const reminderTotalMins = cutoffTotalMins - settings.cutoffReminderMinutes;
+        if (reminderTotalMins < 0) continue;
+
+        if (nowTotalMins === reminderTotalMins) {
+          await sendPushToAllUsers({
+            title: 'Meal Reminder',
+            body: `${mt.name} toggle closes at ${mt.cutoffTime}. Don't forget!`,
+          });
+        }
       }
     } catch (err) {
       console.error('[cronJobs] cutoff reminder error:', err.message);
