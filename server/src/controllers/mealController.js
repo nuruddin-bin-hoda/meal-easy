@@ -14,8 +14,9 @@ const getActiveMealTypes = async () => {
 
 const getTodayToggles = async (req, res, next) => {
   try {
-    const today = getTodayDateString();
-    const { activeMealTypes } = await getActiveMealTypes();
+    const { settings, activeMealTypes } = await getActiveMealTypes();
+    const timezone = settings.timezone ?? 'Asia/Dhaka';
+    const today = getTodayDateString(timezone);
 
     const existing = await MealToggle.find({ userId: req.user.userId, date: today });
     const byType = Object.fromEntries(existing.map(t => [t.mealType, t]));
@@ -25,7 +26,7 @@ const getTodayToggles = async (req, res, next) => {
       isOn: byType[mt.name]?.isOn ?? false,
       guestCount: byType[mt.name]?.guestCount ?? 0,
       cutoffTime: mt.cutoffTime ?? '22:00',
-      isCutoffPassed: isCutoffPassed(mt.cutoffTime ?? '22:00'),
+      isCutoffPassed: isCutoffPassed(mt.cutoffTime ?? '22:00', timezone),
     }));
 
     res.json({ date: today, toggles });
@@ -45,20 +46,21 @@ const setToggle = async (req, res, next) => {
     }
 
     const { settings, activeMealTypes } = await getActiveMealTypes();
+    const timezone = settings.timezone ?? 'Asia/Dhaka';
     const mealTypeSetting = activeMealTypes.find(mt => mt.name === mealType);
     if (!mealTypeSetting) {
       return res.status(400).json({ message: 'Invalid meal type' });
     }
 
-    if (isCutoffPassed(mealTypeSetting.cutoffTime ?? '22:00')) {
+    if (isCutoffPassed(mealTypeSetting.cutoffTime ?? '22:00', timezone)) {
       return res.status(400).json({ message: 'Meal toggle cutoff has passed' });
     }
 
-    const today = getTodayDateString();
+    const today = getTodayDateString(timezone);
     const oldToggle = await MealToggle.findOne({ userId: req.user.userId, date: today, mealType });
 
     if (guestCount > 0) {
-      const currentMonth = getCurrentBillingMonth();
+      const currentMonth = getCurrentBillingMonth(timezone);
       const agg = await MealToggle.aggregate([
         {
           $match: {

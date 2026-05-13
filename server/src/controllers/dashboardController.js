@@ -9,15 +9,18 @@ const { getUserBalance } = require('../utils/balanceHelper');
 const { getCurrentBillingMonth, isCutoffPassed, getTodayDateString, getTomorrowDateString } = require('../utils/mealHelpers');
 
 const getAdminDashboard = async (req, res) => {
-  const currentMonth = getCurrentBillingMonth();
-  const todayStr = getTodayDateString();
+  // Fetch settings first to get timezone before constructing date strings
+  const settings = await MessSettings.findOne();
+  const timezone = settings?.timezone ?? 'Asia/Dhaka';
+
+  const currentMonth = getCurrentBillingMonth(timezone);
+  const todayStr = getTodayDateString(timezone);
 
   const monthStart = new Date(`${currentMonth}-01`);
   const monthEnd = new Date(monthStart);
   monthEnd.setMonth(monthEnd.getMonth() + 1);
 
   const [
-    settings,
     totalActiveUsers,
     todayToggleAgg,
     billing,
@@ -31,7 +34,6 @@ const getAdminDashboard = async (req, res) => {
     lockedCycles,
     allDepositsAgg,
   ] = await Promise.all([
-    MessSettings.findOne(),
     User.countDocuments({ status: 'active' }),
     MealToggle.aggregate([
       { $match: { date: todayStr, isOn: true } },
@@ -118,13 +120,17 @@ const getAdminDashboard = async (req, res) => {
 
 const getUserDashboard = async (req, res) => {
   const userId = req.user.userId;
-  const currentMonth = getCurrentBillingMonth();
-  const todayStr = getTodayDateString();
-  const tomorrowStr = getTomorrowDateString();
 
-  const [settings, tomorrowMenuDocs, existingToggles, billing, myMealCountAgg, lowStockItems, recentNotifications] =
+  // Fetch settings first to get timezone before constructing date strings
+  const settings = await MessSettings.findOne();
+  const timezone = settings?.timezone ?? 'Asia/Dhaka';
+
+  const currentMonth = getCurrentBillingMonth(timezone);
+  const todayStr = getTodayDateString(timezone);
+  const tomorrowStr = getTomorrowDateString(timezone);
+
+  const [tomorrowMenuDocs, existingToggles, billing, myMealCountAgg, lowStockItems, recentNotifications] =
     await Promise.all([
-      MessSettings.findOne(),
       Menu.find({ date: tomorrowStr }),
       MealToggle.find({ userId, date: todayStr }).select('mealType isOn guestCount'),
       calculateBilling(currentMonth),
@@ -147,7 +153,7 @@ const getUserDashboard = async (req, res) => {
     isOn: byType[mt.name]?.isOn ?? false,
     guestCount: byType[mt.name]?.guestCount ?? 0,
     cutoffTime: mt.cutoffTime ?? '22:00',
-    isCutoffPassed: isCutoffPassed(mt.cutoffTime ?? '22:00'),
+    isCutoffPassed: isCutoffPassed(mt.cutoffTime ?? '22:00', timezone),
   }));
 
   res.json({
@@ -162,7 +168,9 @@ const getUserDashboard = async (req, res) => {
 };
 
 const getChefDashboard = async (req, res) => {
-  const todayStr = getTodayDateString();
+  const settings = await MessSettings.findOne();
+  const timezone = settings?.timezone ?? 'Asia/Dhaka';
+  const todayStr = getTodayDateString(timezone);
 
   const [todayMenuDocs, todayPortionAgg, stock] = await Promise.all([
     Menu.find({ date: todayStr }),

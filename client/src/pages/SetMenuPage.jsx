@@ -14,8 +14,9 @@ function getLocalDateString() {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-function ChipInput({ mealType, items, inputValue, onAdd, onDelete, onInputChange, placeholder, helperText }) {
+function ChipInput({ mealType, items, inputValue, onAdd, onDelete, onInputChange, placeholder, helperText, disabled }) {
   const handleKeyDown = (e) => {
+    if (disabled) return;
     if (e.key !== 'Enter') return;
     e.preventDefault();
     const val = inputValue.trim();
@@ -30,7 +31,7 @@ function ChipInput({ mealType, items, inputValue, onAdd, onDelete, onInputChange
             <Chip
               key={item}
               label={item}
-              onDelete={() => onDelete(mealType, item)}
+              onDelete={disabled ? undefined : () => onDelete(mealType, item)}
               size="small"
             />
           ))}
@@ -44,6 +45,7 @@ function ChipInput({ mealType, items, inputValue, onAdd, onDelete, onInputChange
         size="small"
         fullWidth
         helperText={helperText}
+        disabled={disabled}
       />
     </Box>
   );
@@ -53,6 +55,7 @@ export default function SetMenuPage() {
   const { t } = useTranslation();
   const [date, setDate] = useState(getLocalDateString);
   const [mealTypes, setMealTypes] = useState([]);
+  const [mealTypeCutoffs, setMealTypeCutoffs] = useState({});
   const [items, setItems] = useState({});
   const [inputs, setInputs] = useState({});
   const [loadingSettings, setLoadingSettings] = useState(true);
@@ -60,10 +63,27 @@ export default function SetMenuPage() {
   const [saving, setSaving] = useState({});
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
+  const isMealCutoffPassed = (cutoffTime) => {
+    if (!cutoffTime) return false;
+    const [h, m] = cutoffTime.split(':').map(Number);
+    const now = new Date();
+    return now.getHours() * 60 + now.getMinutes() >= h * 60 + m;
+  };
+
+  const isToday = (dateStr) => {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    return dateStr === `${yyyy}-${mm}-${dd}`;
+  };
+
   useEffect(() => {
     api.get('/settings').then(res => {
-      const active = (res.data.mealTypes ?? []).filter(mt => mt.isActive).map(mt => mt.name);
+      const activeFull = (res.data.mealTypes ?? []).filter(mt => mt.isActive);
+      const active = activeFull.map(mt => mt.name);
       setMealTypes(active);
+      setMealTypeCutoffs(Object.fromEntries(activeFull.map(mt => [mt.name, mt.cutoffTime])));
       setItems(Object.fromEntries(active.map(n => [n, []])));
       setInputs(Object.fromEntries(active.map(n => [n, ''])));
     }).catch(() => {
@@ -145,40 +165,53 @@ export default function SetMenuPage() {
         </Box>
       ) : (
         <Stack spacing={2}>
-          {mealTypes.map(mealType => (
-            <Card key={mealType} elevation={2}>
-              <CardHeader
-                title={mealType}
-                titleTypographyProps={{ variant: 'h6', fontWeight: 600 }}
-                sx={{ pb: 0 }}
-              />
-              <CardContent>
-                <ChipInput
-                  mealType={mealType}
-                  items={items[mealType] ?? []}
-                  inputValue={inputs[mealType] ?? ''}
-                  onAdd={handleAdd}
-                  onDelete={handleDelete}
-                  onInputChange={handleInputChange}
-                  placeholder={t('menu.typeItemPrompt')}
-                  helperText={t('menu.pressEnterToAdd')}
+          {mealTypes.map(mealType => {
+            const isPastDate = date < getLocalDateString();
+            const cutoffPassed = isToday(date) && isMealCutoffPassed(mealTypeCutoffs[mealType]);
+            const locked = isPastDate || cutoffPassed;
+            const lockCaption = isPastDate
+              ? 'Cannot edit past menus'
+              : `Locked — cutoff passed at ${mealTypeCutoffs[mealType]}`;
+
+            return (
+              <Card key={mealType} elevation={2}>
+                <CardHeader
+                  title={mealType}
+                  titleTypographyProps={{ variant: 'h6', fontWeight: 600 }}
+                  subheader={locked ? (
+                    <Typography variant="caption" color="error">{lockCaption}</Typography>
+                  ) : null}
+                  sx={{ pb: 0 }}
                 />
-              </CardContent>
-              <CardActions sx={{ px: 2, pb: 2, pt: 0 }}>
-                <Button
-                  variant="contained"
-                  onClick={() => handleSave(mealType)}
-                  disabled={!!saving[mealType]}
-                  fullWidth
-                  size="large"
-                >
-                  {saving[mealType]
-                    ? <CircularProgress size={22} color="inherit" />
-                    : t('menu.saveMenu')}
-                </Button>
-              </CardActions>
-            </Card>
-          ))}
+                <CardContent>
+                  <ChipInput
+                    mealType={mealType}
+                    items={items[mealType] ?? []}
+                    inputValue={inputs[mealType] ?? ''}
+                    onAdd={handleAdd}
+                    onDelete={handleDelete}
+                    onInputChange={handleInputChange}
+                    placeholder={t('menu.typeItemPrompt')}
+                    helperText={t('menu.pressEnterToAdd')}
+                    disabled={locked}
+                  />
+                </CardContent>
+                <CardActions sx={{ px: 2, pb: 2, pt: 0 }}>
+                  <Button
+                    variant="contained"
+                    onClick={() => handleSave(mealType)}
+                    disabled={!!saving[mealType] || locked}
+                    fullWidth
+                    size="large"
+                  >
+                    {saving[mealType]
+                      ? <CircularProgress size={22} color="inherit" />
+                      : t('menu.saveMenu')}
+                  </Button>
+                </CardActions>
+              </Card>
+            );
+          })}
         </Stack>
       )}
 

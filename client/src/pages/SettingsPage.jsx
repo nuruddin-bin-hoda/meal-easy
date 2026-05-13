@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import {
   Alert, Box, Button, Card, CardContent, CircularProgress,
-  Container, Divider, IconButton, Snackbar, Stack, TextField, Typography,
+  Container, Divider, FormControl, IconButton, InputLabel,
+  MenuItem, Select, Snackbar, Stack, TextField, Typography,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -29,6 +30,7 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       const res = await api.patch('/settings', {
+        timezone: settings.timezone,
         cutoffReminderMinutes: settings.cutoffReminderMinutes,
         guestMealMonthlyLimit: settings.guestMealMonthlyLimit,
         mealTypes: settings.mealTypes,
@@ -92,6 +94,24 @@ export default function SettingsPage() {
             <Typography variant="subtitle1" fontWeight={700} gutterBottom>General</Typography>
             <Divider sx={{ mb: 2 }} />
             <Stack spacing={2}>
+              <FormControl size="small" sx={{ maxWidth: 260 }}>
+                <InputLabel>{t('settings.timezone')}</InputLabel>
+                <Select
+                  label={t('settings.timezone')}
+                  value={settings.timezone ?? 'Asia/Dhaka'}
+                  onChange={(e) => setSettings((s) => ({ ...s, timezone: e.target.value }))}
+                >
+                  <MenuItem value="Asia/Dhaka">Asia/Dhaka (Bangladesh)</MenuItem>
+                  <MenuItem value="Asia/Kolkata">Asia/Kolkata (India)</MenuItem>
+                  <MenuItem value="Asia/Tokyo">Asia/Tokyo (Japan)</MenuItem>
+                  <MenuItem value="Asia/Dubai">Asia/Dubai (UAE)</MenuItem>
+                  <MenuItem value="Europe/London">Europe/London (UK)</MenuItem>
+                  <MenuItem value="America/New_York">America/New_York (US East)</MenuItem>
+                  <MenuItem value="America/Los_Angeles">America/Los_Angeles (US West)</MenuItem>
+                  <MenuItem value="Asia/Singapore">Asia/Singapore (Singapore)</MenuItem>
+                  <MenuItem value="Australia/Sydney">Australia/Sydney (Australia)</MenuItem>
+                </Select>
+              </FormControl>
               <TextField
                 label="Cutoff reminder (minutes before)"
                 type="number"
@@ -158,7 +178,7 @@ export default function SettingsPage() {
                     value={mt.cutoffTime ?? '22:00'}
                     onChange={(e) => updateMealTypeCutoff(mt.name, e.target.value)}
                     sx={{ width: 150 }}
-                    slotProps={{ htmlInput: { step: 60 } }}
+                    inputProps={{ step: 60 }}
                   />
 
                   <Typography variant="caption" color="text.secondary" sx={{ flex: 1, minWidth: 80 }}>

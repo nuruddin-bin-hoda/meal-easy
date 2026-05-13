@@ -9,8 +9,20 @@ function startCronJobs() {
       const settings = await MessSettings.findOne();
       if (!settings?.cutoffReminderMinutes || !settings?.mealTypes?.length) return;
 
+      const timezone = settings.timezone ?? 'Asia/Dhaka';
       const now = new Date();
-      const nowTotalMins = now.getHours() * 60 + now.getMinutes();
+
+      // Get current time in the mess timezone
+      const tzFormatter = new Intl.DateTimeFormat('en-GB', {
+        timeZone: timezone,
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      });
+      const parts = tzFormatter.formatToParts(now);
+      const currentHour = parseInt(parts.find(p => p.type === 'hour').value);
+      const currentMin  = parseInt(parts.find(p => p.type === 'minute').value);
+      const nowTotalMins = currentHour * 60 + currentMin;
 
       for (const mt of settings.mealTypes) {
         if (!mt.isActive || !mt.cutoffTime) continue;

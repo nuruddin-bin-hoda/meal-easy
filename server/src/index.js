@@ -16,6 +16,7 @@ async function runStartupChecks() {
   const settings = await MessSettings.findOne();
   if (!settings) {
     await MessSettings.create({
+      timezone: 'Asia/Dhaka',
       cutoffReminderMinutes: 30,
       guestMealMonthlyLimit: 5,
       lowBalanceThreshold: 100,

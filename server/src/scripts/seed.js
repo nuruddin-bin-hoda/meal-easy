@@ -41,6 +41,7 @@ async function seed() {
     console.log('MessSettings already exists — skipping.');
   } else {
     await MessSettings.create({
+      timezone: 'Asia/Dhaka',
       cutoffReminderMinutes: 30,
       guestMealMonthlyLimit: 5,
       lowBalanceThreshold: 100,

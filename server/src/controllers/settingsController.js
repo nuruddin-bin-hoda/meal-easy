@@ -15,7 +15,7 @@ const getSettings = async (req, res, next) => {
 
 const updateSettings = async (req, res, next) => {
   try {
-    const allowed = ['cutoffTime', 'cutoffReminderMinutes', 'guestMealMonthlyLimit', 'lowBalanceThreshold', 'mealTypes'];
+    const allowed = ['timezone', 'cutoffReminderMinutes', 'guestMealMonthlyLimit', 'lowBalanceThreshold', 'mealTypes'];
     const update = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) update[key] = req.body[key];

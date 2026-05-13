@@ -342,6 +342,9 @@
     "allActors": "সকল ব্যক্তি",
     "exportPdf": "PDF রপ্তানি"
   },
+  "settings": {
+    "timezone": "মেস টাইমজোন"
+  },
   "notifications": {
     "title": "বিজ্ঞপ্তি",
     "unread": "{{count}}টি অপঠিত",

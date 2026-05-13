@@ -342,6 +342,9 @@
     "allActors": "All actors",
     "exportPdf": "Export PDF"
   },
+  "settings": {
+    "timezone": "Mess Timezone"
+  },
   "notifications": {
     "title": "Notifications",
     "unread": "{{count}} unread",

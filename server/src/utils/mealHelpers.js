@@ -1,32 +1,49 @@
-function isCutoffPassed(cutoffTime) {
-  const [hh, mm] = cutoffTime.split(':').map(Number);
+function isCutoffPassed(cutoffTime, timezone = 'Asia/Dhaka') {
   const now = new Date();
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
-  return nowMinutes >= hh * 60 + mm;
+  const formatter = new Intl.DateTimeFormat('en-GB', {
+    timeZone: timezone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+  const parts = formatter.formatToParts(now);
+  const currentHour = parseInt(parts.find(p => p.type === 'hour').value);
+  const currentMin  = parseInt(parts.find(p => p.type === 'minute').value);
+  const [cutoffHour, cutoffMin] = cutoffTime.split(':').map(Number);
+  return currentHour * 60 + currentMin >= cutoffHour * 60 + cutoffMin;
 }
 
-function getTodayDateString() {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+function getTodayDateString(timezone = 'Asia/Dhaka') {
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  return formatter.format(now); // YYYY-MM-DD
 }
 
-function getTomorrowDateString() {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+function getTomorrowDateString(timezone = 'Asia/Dhaka') {
+  const now = new Date();
+  now.setDate(now.getDate() + 1);
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  return formatter.format(now); // YYYY-MM-DD
 }
 
-function getCurrentBillingMonth() {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  return `${y}-${m}`;
+function getCurrentBillingMonth(timezone = 'Asia/Dhaka') {
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+  });
+  return formatter.format(now); // YYYY-MM
 }
 
 module.exports = { isCutoffPassed, getTodayDateString, getTomorrowDateString, getCurrentBillingMonth };
