@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { addDays, format } from 'date-fns';
 import {
   Alert, Box, Card, CardContent, CardHeader, CircularProgress,
   Container, Divider, List, ListItem, ListItemText,
@@ -9,7 +8,13 @@ import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
 import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 
-const todayPlusOne = () => format(addDays(new Date(), 1), 'yyyy-MM-dd');
+function getLocalDateString() {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
 
 function formatDate(dateStr) {
   if (!dateStr) return '';
@@ -20,7 +25,7 @@ function formatDate(dateStr) {
 
 export default function MenuPage() {
   const { t } = useTranslation();
-  const [date, setDate] = useState(todayPlusOne);
+  const [date, setDate] = useState(getLocalDateString);
   const [menus, setMenus] = useState({});
   const [loading, setLoading] = useState(false);
 

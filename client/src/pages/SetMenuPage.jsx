@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { addDays, format } from 'date-fns';
 import {
   Alert, Box, Button, Card, CardActions, CardContent, CardHeader,
   Chip, CircularProgress, Container, Snackbar, Stack, TextField, Typography,
@@ -7,7 +6,13 @@ import {
 import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 
-const todayPlusOne = () => format(addDays(new Date(), 1), 'yyyy-MM-dd');
+function getLocalDateString() {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
 
 function ChipInput({ mealType, items, inputValue, onAdd, onDelete, onInputChange, placeholder, helperText }) {
   const handleKeyDown = (e) => {
@@ -46,7 +51,7 @@ function ChipInput({ mealType, items, inputValue, onAdd, onDelete, onInputChange
 
 export default function SetMenuPage() {
   const { t } = useTranslation();
-  const [date, setDate] = useState(todayPlusOne);
+  const [date, setDate] = useState(getLocalDateString);
   const [mealTypes, setMealTypes] = useState([]);
   const [items, setItems] = useState({});
   const [inputs, setInputs] = useState({});
