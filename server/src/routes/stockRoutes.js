@@ -4,7 +4,7 @@ const authenticate = require('../middleware/authenticate');
 const authorize = require('../middleware/authorize');
 const validate = require('../middleware/validate');
 const {
-  listStock, createStock, updateStockQuantity, updateStockSettings, archiveStock,
+  listStock, createStock, updateStockQuantity, updateStockSettings, archiveStock, unarchiveStock, deleteStock,
 } = require('../controllers/stockController');
 
 const router = Router();
@@ -25,6 +25,15 @@ router.post(
   ],
   validate,
   createStock,
+);
+
+router.patch(
+  '/stock/:id/unarchive',
+  authenticate,
+  authorize(['admin', 'superadmin']),
+  [idParam],
+  validate,
+  unarchiveStock,
 );
 
 router.patch(
@@ -50,6 +59,15 @@ router.patch(
   ],
   validate,
   updateStockSettings,
+);
+
+router.delete(
+  '/stock/:id/permanent',
+  authenticate,
+  authorize(['admin', 'superadmin']),
+  [idParam],
+  validate,
+  deleteStock,
 );
 
 router.delete(

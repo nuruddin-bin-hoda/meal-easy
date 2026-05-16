@@ -3,7 +3,8 @@ const { sendPushToAdmins } = require('../utils/pushService');
 
 const listStock = async (req, res, next) => {
   try {
-    const items = await Stock.find({ isArchived: false }).sort({ itemName: 1 });
+    const archived = req.query.archived === 'true';
+    const items = await Stock.find({ isArchived: archived }).sort({ itemName: 1 });
     const result = items.map(item => ({
       ...item.toObject(),
       isLow: item.quantity <= item.lowThreshold,
@@ -94,4 +95,40 @@ const archiveStock = async (req, res, next) => {
   }
 };
 
-module.exports = { listStock, createStock, updateStockQuantity, updateStockSettings, archiveStock };
+const deleteStock = async (req, res, next) => {
+  try {
+    const stockItem = await Stock.findById(req.params.id);
+    if (!stockItem) return res.status(404).json({ message: 'Stock item not found.' });
+
+    await Stock.findByIdAndDelete(req.params.id);
+
+    await AuditLog.create({
+      actorId: req.user.userId,
+      actorRole: req.user.role,
+      action: 'STOCK_DELETED',
+      targetEntity: 'stock',
+      targetId: req.params.id,
+      oldValue: { itemName: stockItem.itemName, quantity: stockItem.quantity, unit: stockItem.unit },
+    });
+
+    res.json({ message: 'Stock item permanently deleted' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const unarchiveStock = async (req, res, next) => {
+  try {
+    const stockItem = await Stock.findOneAndUpdate(
+      { _id: req.params.id, isArchived: true },
+      { isArchived: false },
+      { new: true },
+    );
+    if (!stockItem) return res.status(404).json({ message: 'Stock item not found.' });
+    res.json({ message: 'Stock item unarchived', stockItem });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { listStock, createStock, updateStockQuantity, updateStockSettings, archiveStock, unarchiveStock, deleteStock };

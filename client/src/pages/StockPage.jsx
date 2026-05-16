@@ -2,11 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Alert, Box, Button, Chip, CircularProgress, Container, Dialog,
   DialogActions, DialogContent, DialogTitle, IconButton, Snackbar,
-  Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography,
+  Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField,
+  ToggleButton, ToggleButtonGroup, Typography,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import ArchiveIcon from '@mui/icons-material/Archive';
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import SettingsIcon from '@mui/icons-material/Settings';
+import UnarchiveIcon from '@mui/icons-material/Unarchive';
 import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
@@ -20,7 +23,9 @@ export default function StockPage() {
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
   const canEdit = isAdmin || user?.role === 'chef';
 
+  const [view, setView] = useState('active');
   const [stock, setStock] = useState([]);
+  const [archivedStock, setArchivedStock] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const [editingId, setEditingId] = useState(null);
@@ -42,14 +47,18 @@ export default function StockPage() {
   const loadStock = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get('/stock');
-      setStock(res.data.stock ?? []);
+      const res = await api.get(view === 'archived' ? '/stock?archived=true' : '/stock');
+      if (view === 'archived') {
+        setArchivedStock(res.data.stock ?? []);
+      } else {
+        setStock(res.data.stock ?? []);
+      }
     } catch {
       notify(t('stock.failedToLoad'), 'error');
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [t, view]);
 
   useEffect(() => { loadStock(); }, [loadStock]);
 
@@ -131,20 +140,53 @@ export default function StockPage() {
     }
   };
 
+  const handlePermanentDelete = async (id, itemName) => {
+    if (!window.confirm(`Permanently delete ${itemName}? This cannot be undone.`)) return;
+    try {
+      await api.delete(`/stock/${id}/permanent`);
+      setStock(prev => prev.filter(s => s._id !== id));
+      notify('Stock item permanently deleted');
+    } catch (err) {
+      notify(err.response?.data?.message ?? t('stock.failedToArchive'), 'error');
+    }
+  };
+
+  const handleUnarchive = async (id) => {
+    try {
+      await api.patch(`/stock/${id}/unarchive`);
+      setArchivedStock(prev => prev.filter(s => s._id !== id));
+      notify('Item unarchived — it will appear in Active stock');
+    } catch (err) {
+      notify(err.response?.data?.message ?? t('stock.failedToArchive'), 'error');
+    }
+  };
+
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
         <Typography variant="h5" fontWeight={700}>{t('stock.title')}</Typography>
-        {isAdmin && (
+        {isAdmin && view === 'active' && (
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => setAddOpen(true)}>
             {t('stock.addItem')}
           </Button>
         )}
       </Stack>
 
+      <ToggleButtonGroup
+        value={view}
+        exclusive
+        onChange={(_, val) => { if (val) setView(val); }}
+        color="success"
+        size="small"
+        sx={{ mb: 2.5 }}
+      >
+        <ToggleButton value="active">Active</ToggleButton>
+        <ToggleButton value="archived">Archived</ToggleButton>
+      </ToggleButtonGroup>
+
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 6 }}><CircularProgress /></Box>
-      ) : (
+      ) : view === 'active' ? (
         <Table size="small">
           <TableHead>
             <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: 'action.hover' } }}>
@@ -222,7 +264,50 @@ export default function StockPage() {
                       <IconButton size="small" color="warning" onClick={() => handleArchive(item._id)}>
                         <ArchiveIcon fontSize="small" />
                       </IconButton>
+                      <IconButton size="small" color="error" onClick={() => handlePermanentDelete(item._id, item.itemName)}>
+                        <DeleteForeverIcon fontSize="small" />
+                      </IconButton>
                     </Stack>
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      ) : (
+        <Table size="small">
+          <TableHead>
+            <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: 'action.hover' } }}>
+              <TableCell>{t('common.name')}</TableCell>
+              <TableCell align="right">{t('common.quantity')}</TableCell>
+              <TableCell>{t('common.unit')}</TableCell>
+              <TableCell align="right">{t('stock.threshold')}</TableCell>
+              {isAdmin && <TableCell align="center">{t('common.actions')}</TableCell>}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {archivedStock.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={isAdmin ? 5 : 4} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                  No archived items
+                </TableCell>
+              </TableRow>
+            ) : archivedStock.map(item => (
+              <TableRow key={item._id} hover>
+                <TableCell>{item.itemName}</TableCell>
+                <TableCell align="right">{item.quantity}</TableCell>
+                <TableCell>{item.unit}</TableCell>
+                <TableCell align="right">{item.lowThreshold}</TableCell>
+                {isAdmin && (
+                  <TableCell align="center">
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<UnarchiveIcon fontSize="small" />}
+                      onClick={() => handleUnarchive(item._id)}
+                    >
+                      Unarchive
+                    </Button>
                   </TableCell>
                 )}
               </TableRow>
