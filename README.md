@@ -18,16 +18,16 @@ A full-stack meal management web application for a residential mess of 100+ user
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Frontend | React 19 + Vite, Material UI v6, i18next |
-| Backend | Node.js + Express.js |
-| Database | MongoDB 7 + Mongoose |
-| Auth | JWT in httpOnly cookie |
-| Push | Web Push API + VAPID + Service Worker |
-| PDF | Puppeteer (server-side, headless Chromium) |
-| Proxy / Serving | Nginx (production) |
-| Container | Docker + Docker Compose |
+| Layer           | Technology                                 |
+| --------------- | ------------------------------------------ |
+| Frontend        | React 19 + Vite, Material UI v6, i18next   |
+| Backend         | Node.js + Express.js                       |
+| Database        | MongoDB 7 + Mongoose                       |
+| Auth            | JWT in httpOnly cookie                     |
+| Push            | Web Push API + VAPID + Service Worker      |
+| PDF             | Puppeteer (server-side, headless Chromium) |
+| Proxy / Serving | Nginx (production)                         |
+| Container       | Docker + Docker Compose                    |
 
 ## Prerequisites
 
@@ -35,6 +35,7 @@ A full-stack meal management web application for a residential mess of 100+ user
 - [Node.js 20+](https://nodejs.org/) — only needed for the seed script and local development
 
 Verify:
+
 ```bash
 docker --version        # Docker version 24+
 docker compose version  # Docker Compose version v2+
@@ -59,6 +60,7 @@ cp .env.example .env
 Open `.env` and fill in the required values (see [Environment Variables](#environment-variables) below).
 
 Minimum required changes:
+
 ```dotenv
 JWT_SECRET=<generate a long random string>
 VAPID_PUBLIC_KEY=<from web-push keygen>
@@ -67,6 +69,7 @@ VAPID_SUBJECT=mailto:you@example.com
 ```
 
 Generate VAPID keys (run once, outside Docker):
+
 ```bash
 npx web-push generate-vapid-keys
 ```
@@ -89,6 +92,7 @@ MONGO_URI=mongodb://localhost:27017/meal-easy node server/src/scripts/seed.js
 ```
 
 Expected output:
+
 ```
 Connected to MongoDB.
 Super Admin created  phone=01700000000  password=superadmin123
@@ -100,12 +104,13 @@ Done.
 
 ### 5. Access the app
 
-| URL | Purpose |
-|---|---|
-| `http://localhost` | React client (via Nginx) |
-| `http://localhost:3000/api/v1/health` | API health check |
+| URL                                   | Purpose                  |
+| ------------------------------------- | ------------------------ |
+| `http://localhost`                    | React client (via Nginx) |
+| `http://localhost:3000/api/v1/health` | API health check         |
 
 Log in with:
+
 - Phone: `01700000000`
 - Password: `superadmin123`
 
@@ -187,39 +192,40 @@ meal-easy/
 
 ## User Roles
 
-| Role | Capabilities |
-|---|---|
-| **superadmin** | Full control. Created by seed script. Can manage admins. |
-| **admin** | Same as superadmin except cannot manage other admins. |
-| **user** | Self-registers (requires admin approval). Toggles own meals, views own reports. |
-| **chef** | Created by admin. Views today's portions and stock. Can update stock quantities. |
+| Role           | Capabilities                                                                     |
+| -------------- | -------------------------------------------------------------------------------- |
+| **superadmin** | Full control. Created by seed script. Can manage admins.                         |
+| **admin**      | Same as superadmin except cannot manage other admins.                            |
+| **user**       | Self-registers (requires admin approval). Toggles own meals, views own reports.  |
+| **chef**       | Created by admin. Views today's portions and stock. Can update stock quantities. |
 
 ## Environment Variables
 
 All variables live in the root `.env` file (which is also loaded by the server process via `dotenv`).
 
-| Variable | Required | Default | Description |
-|---|---|---|---|
-| `NODE_ENV` | No | `development` | Set to `production` in Docker Compose |
-| `PORT` | No | `5001` | API server port |
-| `MONGO_URI` | Yes | — | MongoDB connection string. Use `mongodb://mongo:27017/meal-easy` inside Docker, `mongodb://localhost:27017/meal-easy` for local dev. |
-| `JWT_SECRET` | Yes | — | Secret for signing JWT tokens. Use a long random string (32+ chars). |
-| `JWT_EXPIRES_IN` | No | `7d` | JWT token lifetime (e.g. `1d`, `7d`, `30d`). |
-| `VAPID_PUBLIC_KEY` | Yes* | — | VAPID public key for web push. Generate with `npx web-push generate-vapid-keys`. |
-| `VAPID_PRIVATE_KEY` | Yes* | — | VAPID private key. Keep secret. |
-| `VAPID_SUBJECT` | Yes* | — | Contact email for VAPID (e.g. `mailto:admin@example.com`). |
-| `CLIENT_URL` | No | `http://localhost:3000` | Allowed CORS origin. Set to the public URL of the client in production. |
+| Variable            | Required | Default                 | Description                                                                                                                          |
+| ------------------- | -------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `NODE_ENV`          | No       | `development`           | Set to `production` in Docker Compose                                                                                                |
+| `PORT`              | No       | `3000`                  | API server port                                                                                                                      |
+| `MONGO_URI`         | Yes      | —                       | MongoDB connection string. Use `mongodb://mongo:27017/meal-easy` inside Docker, `mongodb://localhost:27017/meal-easy` for local dev. |
+| `JWT_SECRET`        | Yes      | —                       | Secret for signing JWT tokens. Use a long random string (32+ chars).                                                                 |
+| `JWT_EXPIRES_IN`    | No       | `7d`                    | JWT token lifetime (e.g. `1d`, `7d`, `30d`).                                                                                         |
+| `VAPID_PUBLIC_KEY`  | Yes\*    | —                       | VAPID public key for web push. Generate with `npx web-push generate-vapid-keys`.                                                     |
+| `VAPID_PRIVATE_KEY` | Yes\*    | —                       | VAPID private key. Keep secret.                                                                                                      |
+| `VAPID_SUBJECT`     | Yes\*    | —                       | Contact email for VAPID (e.g. `mailto:admin@example.com`).                                                                           |
+| `CLIENT_URL`        | No       | `http://localhost:3000` | Allowed CORS origin. Set to the public URL of the client in production.                                                              |
 
-*Push notifications will silently fail without VAPID keys, but all other features work normally.
+\*Push notifications will silently fail without VAPID keys, but all other features work normally.
 
 ### MONGO_URI — two valid values
 
-| Context | Value |
-|---|---|
-| Inside Docker Compose | `mongodb://mongo:27017/meal-easy` |
+| Context               | Value                                 |
+| --------------------- | ------------------------------------- |
+| Inside Docker Compose | `mongodb://mongo:27017/meal-easy`     |
 | Local dev (Mac/Linux) | `mongodb://localhost:27017/meal-easy` |
 
 The `.env` file defaults to the Docker value. When running the server outside Docker, override inline:
+
 ```bash
 MONGO_URI=mongodb://localhost:27017/meal-easy npm run dev
 ```

@@ -14,5 +14,5 @@ COPY src ./src
 # Ensure the uploads directory exists inside the container
 RUN mkdir -p uploads
 
-EXPOSE 5001
+EXPOSE 3000
 CMD ["node", "src/index.js"]
