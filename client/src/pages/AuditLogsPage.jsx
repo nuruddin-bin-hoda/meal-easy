@@ -122,7 +122,7 @@ export default function AuditLogsPage() {
   const setField = (key) => (e) => setFilterForm((f) => ({ ...f, [key]: e.target.value }));
 
   const buildExportHref = () => {
-    const base = `${import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1'}/audit-logs/export`;
+    const base = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/audit-logs/export`;
     const params = new URLSearchParams();
     if (appliedFilters.startDate) params.set('startDate', appliedFilters.startDate);
     if (appliedFilters.endDate) params.set('endDate', appliedFilters.endDate);

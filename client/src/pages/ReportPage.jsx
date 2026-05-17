@@ -88,7 +88,7 @@ export default function ReportPage() {
     : 0;
 
   const pdfHref = userId && month
-    ? `${import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1'}/reports/${userId}/${month}/pdf`
+    ? `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/reports/${userId}/${month}/pdf`
     : null;
 
   return (

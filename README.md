@@ -103,7 +103,7 @@ Done.
 | URL | Purpose |
 |---|---|
 | `http://localhost` | React client (via Nginx) |
-| `http://localhost:5001/api/v1/health` | API health check |
+| `http://localhost:3000/api/v1/health` | API health check |
 
 Log in with:
 - Phone: `01700000000`
@@ -131,7 +131,7 @@ cd server
 MONGO_URI=mongodb://localhost:27017/meal-easy npm run dev
 ```
 
-The server starts on `http://localhost:5001`.
+The server starts on `http://localhost:3000`.
 
 ### Start the React client
 
@@ -140,9 +140,9 @@ cd client
 npm run dev
 ```
 
-The dev server starts on `http://localhost:5173` (or the next available port).
+The dev server starts on `http://localhost:4000` (or the next available port).
 
-The client `.env` already sets `VITE_API_URL=http://localhost:5001/api/v1`, so axios points at the local server.
+The client `.env` already sets `VITE_API_URL=http://localhost:3000/api/v1`, so axios points at the local server.
 
 ### Seed the database (first time only)
 
