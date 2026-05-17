@@ -48,6 +48,7 @@ const NAV_CONFIG = {
     { key: 'nav.stock',        path: '/stock',       Icon: StockIcon },
     { key: 'nav.chefs',        path: '/chefs',       Icon: ChefsIcon },
     { key: 'nav.billing',      path: '/billing',     Icon: BillingIcon },
+    { key: 'nav.reports',      path: '/reports',     Icon: ReportsIcon },
     { key: 'nav.auditLogs',    path: '/audit-logs',  Icon: AuditIcon },
     { key: 'nav.settings',     path: '/settings',    Icon: SettingsIcon },
   ],
@@ -58,6 +59,7 @@ const NAV_CONFIG = {
     { key: 'nav.reports',      path: '/reports',          Icon: ReportsIcon },
     { key: 'nav.stock',        path: '/stock',            Icon: StockIcon },
     { key: 'nav.notifications',path: '/notifications',    Icon: NotificationsIcon },
+    { key: 'nav.auditLogs',    path: '/audit-logs',       Icon: AuditIcon },
     { key: 'nav.profile',      path: '/profile',          Icon: ProfileIcon },
   ],
   chef: [
