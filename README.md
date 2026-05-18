@@ -155,6 +155,14 @@ The client `.env` already sets `VITE_API_URL=http://localhost:3000/api/v1`, so a
 MONGO_URI=mongodb://localhost:27017/meal-easy node server/src/scripts/seed.js
 ```
 
+## Accessing from mobile (same WiFi network)
+
+Run: `./scripts/set-ip.sh`
+
+This auto-detects your Mac's IP and updates `MAC_IP` in `.env`.
+Then restart Docker and open `http://YOUR_IP:4000` on your phone.
+If your IP changes, just run the script again and restart Docker.
+
 ## Project Structure
 
 ```
