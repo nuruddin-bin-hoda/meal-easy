@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Meal Easy — Full application design</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Hind+Siliguri:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<style>
+  html, body, #root { height: 100%; }
+  body {
+    margin: 0;
+    font-family: "Inter", system-ui, sans-serif;
+    background: #f0eee9;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  .me-artboard { font-family: inherit; }
+  .me-artboard h1, .me-artboard h2, .me-artboard h3, .me-artboard h4 { margin: 0; }
+  .me-artboard button { font: inherit; cursor: pointer; }
+  .me-artboard input { font: inherit; }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="app/tokens.jsx"></script>
+<script type="text/babel" src="app/data.jsx"></script>
+<script type="text/babel" src="app/shell.jsx"></script>
+<script type="text/babel" src="app/screens-auth.jsx"></script>
+<script type="text/babel" src="app/screens-user.jsx"></script>
+<script type="text/babel" src="app/screens-admin.jsx"></script>
+<script type="text/babel" src="app/screens-misc.jsx"></script>
+
+<script type="text/babel" data-presets="env,react">
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "theme": "light"
+}/*EDITMODE-END*/;
+
+function Frame({ children, dark }) {
+  return <div className="me-artboard" style={{
+    width: '100%', height: '100%',
+    background: dark ? '#1F1E1D' : '#FAF8F3',
+    overflow: 'hidden',
+  }}>{children}</div>;
+}
+
+function App() {
+  const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const dark = tweaks.theme === 'dark';
+  const tok = window.tokens(dark);
+
+  // Phone-sized artboards (one iPhone-ish frame)
+  const MOB_W = 390, MOB_H = 844;
+  // Desktop-sized artboards (laptop content area)
+  const DESK_W = 1280, DESK_H = 820;
+  const DESK_H_TALL = 1100;
+
+  return (
+    <>
+      <DesignCanvas>
+        {/* ───── Auth ───── */}
+        <DCSection
+          id="auth"
+          title="Auth"
+          subtitle="First-time entry to the app. Soft warm white, single primary CTA, request-access pattern with admin approval flow."
+        >
+          <DCArtboard id="auth-login" label="Sign in · Mobile" width={MOB_W} height={MOB_H}>
+            <Frame dark={dark}><ScreenLogin tok={tok} mode="mobile" /></Frame>
+          </DCArtboard>
+          <DCArtboard id="auth-register" label="Register · Mobile" width={MOB_W} height={MOB_H}>
+            <Frame dark={dark}><ScreenRegister tok={tok} mode="mobile" /></Frame>
+          </DCArtboard>
+          <DCArtboard id="auth-login-desk" label="Sign in · Desktop" width={DESK_W} height={DESK_H}>
+            <Frame dark={dark}><ScreenLogin tok={tok} mode="desktop" /></Frame>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ───── Member (user) ───── */}
+        <DCSection
+          id="user"
+          title="Member"
+          subtitle="What a resident sees. Phone is primary; desktop available. Mobile shell = top bar + 5-tab bottom nav. Bell badge counts unread."
+        >
+          <DCArtboard id="u-dash-mob" label="Dashboard · Mobile" width={MOB_W} height={MOB_H}>
+            <Frame dark={dark}><ScreenUserDashboard tok={tok} mode="mobile" /></Frame>
+          </DCArtboard>
+          <DCArtboard id="u-meals-mob" label="Tomorrow's meals · Mobile" width={MOB_W} height={MOB_H}>
+            <Frame dark={dark}><ScreenMealToggle tok={tok} mode="mobile" /></Frame>
+          </DCArtboard>
+          <DCArtboard id="u-menu-mob" label="Menu · Mobile" width={MOB_W} height={MOB_H}>
+            <Frame dark={dark}><ScreenMenu tok={tok} mode="mobile" /></Frame>
+          </DCArtboard>
+          <DCArtboard id="u-report-mob" label="My report · Mobile" width={MOB_W} height={MOB_H}>
+            <Frame dark={dark}><ScreenMyReport tok={tok} mode="mobile" /></Frame>
+          </DCArtboard>
+          <DCArtboard id="u-profile-mob" label="Profile · Mobile" width={MOB_W} height={MOB_H}>
+            <Frame dark={dark}><ScreenProfile tok={tok} mode="mobile" /></Frame>
+          </DCArtboard>
+          <DCArtboard id="u-notif-mob" label="Notifications · Mobile" width={MOB_W} height={MOB_H}>
+            <Frame dark={dark}><ScreenNotifications tok={tok} mode="mobile" /></Frame>
+          </DCArtboard>
+
+          <DCArtboard id="u-dash-desk" label="Dashboard · Desktop" width={DESK_W} height={DESK_H}>
+            <Frame dark={dark}><ScreenUserDashboard tok={tok} mode="desktop" /></Frame>
+          </DCArtboard>
+          <DCArtboard id="u-meals-desk" label="Tomorrow's meals · Desktop" width={DESK_W} height={DESK_H}>
+            <Frame dark={dark}><ScreenMealToggle tok={tok} mode="desktop" /></Frame>
+          </DCArtboard>
+          <DCArtboard id="u-report-desk" label="My report · Desktop" width={DESK_W} height={DESK_H_TALL}>
+            <Frame dark={dark}><ScreenMyReport tok={tok} mode="desktop" /></Frame>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ───── Admin ───── */}
+        <DCSection
+          id="admin"
+          title="Admin"
+          subtitle="Desktop-first. Left sidebar with 11 sections. Meal Rate hero on dashboard. All admin tables share the same column-header + hairline-row pattern."
+        >
+          <DCArtboard id="a-dash" label="Dashboard" width={DESK_W} height={DESK_H_TALL}>
+            <Frame dark={dark}><ScreenAdminDashboard tok={tok} /></Frame>
+          </DCArtboard>
+          <DCArtboard id="a-setmenu" label="Set menu" width={DESK_W} height={DESK_H}>
+            <Frame dark={dark}><ScreenSetMenu tok={tok} /></Frame>
+          </DCArtboard>
+          <DCArtboard id="a-purchases" label="Purchases" width={DESK_W} height={DESK_H_TALL}>
+            <Frame dark={dark}><ScreenPurchases tok={tok} /></Frame>
+          </DCArtboard>
+          <DCArtboard id="a-deposits" label="Deposits" width={DESK_W} height={DESK_H_TALL}>
+            <Frame dark={dark}><ScreenDeposits tok={tok} /></Frame>
+          </DCArtboard>
+          <DCArtboard id="a-billing" label="Billing" width={DESK_W} height={DESK_H_TALL}>
+            <Frame dark={dark}><ScreenBilling tok={tok} /></Frame>
+          </DCArtboard>
+          <DCArtboard id="a-stock" label="Stock" width={DESK_W} height={DESK_H_TALL}>
+            <Frame dark={dark}><ScreenStock tok={tok} /></Frame>
+          </DCArtboard>
+          <DCArtboard id="a-members" label="Members" width={DESK_W} height={DESK_H_TALL}>
+            <Frame dark={dark}><ScreenMembers tok={tok} /></Frame>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ───── Chef ───── */}
+        <DCSection
+          id="chef"
+          title="Chef"
+          subtitle="Kitchen view. Today's three meal portions + low-stock callout. Mobile for kitchen floor use, desktop for office terminal."
+        >
+          <DCArtboard id="c-dash-mob" label="Kitchen · Mobile" width={MOB_W} height={MOB_H}>
+            <Frame dark={dark}><ScreenChefDashboard tok={tok} mode="mobile" /></Frame>
+          </DCArtboard>
+          <DCArtboard id="c-dash-desk" label="Kitchen · Desktop" width={DESK_W} height={DESK_H}>
+            <Frame dark={dark}><ScreenChefDashboard tok={tok} mode="desktop" /></Frame>
+          </DCArtboard>
+        </DCSection>
+      </DesignCanvas>
+
+      <TweaksPanel>
+        <TweakSection label="Theme" />
+        <TweakRadio
+          label="Mode"
+          value={tweaks.theme}
+          options={['light', 'dark']}
+          onChange={(v) => setTweak('theme', v)}
+        />
+      </TweaksPanel>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

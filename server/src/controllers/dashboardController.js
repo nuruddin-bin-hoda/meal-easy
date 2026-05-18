@@ -4,12 +4,11 @@ const {
   ChefSalary, Chef, MessSettings, Menu, Notification,
   BillingCycle, UserBill,
 } = require('../models');
-const { calculateBilling } = require('../utils/billingEngine');
+const { calculateBilling, projectRate } = require('../utils/billingEngine');
 const { getUserBalance } = require('../utils/balanceHelper');
 const { getCurrentBillingMonth, isCutoffPassed, getTodayDateString, getTomorrowDateString } = require('../utils/mealHelpers');
 
 const getAdminDashboard = async (req, res) => {
-  // Fetch settings first to get timezone before constructing date strings
   const settings = await MessSettings.findOne();
   const timezone = settings?.timezone ?? 'Asia/Dhaka';
 
@@ -33,6 +32,9 @@ const getAdminDashboard = async (req, res) => {
     currentSalaries,
     lockedCycles,
     allDepositsAgg,
+    previousCycle,
+    todayMenuDocs,
+    projection,
   ] = await Promise.all([
     User.countDocuments({ status: 'active' }),
     MealToggle.aggregate([
@@ -54,24 +56,44 @@ const getAdminDashboard = async (req, res) => {
     ]),
     Stock.find({ isArchived: false, $expr: { $lte: ['$quantity', '$lowThreshold'] } })
       .select('itemName quantity unit lowThreshold'),
-    User.find({ status: 'pending' }).select('_id name roomNumber createdAt'),
-    Chef.find({ isActive: true }).select('_id name'),
+    User.find({ status: 'pending' }).select('_id name roomNumber createdAt').sort({ createdAt: -1 }),
+    Chef.find({ isActive: true }).select('_id name salaryAmount'),
     ChefSalary.find({ billingMonth: currentMonth }).select('chefId paidStatus'),
     BillingCycle.find({ isLocked: true }).select('billingMonth'),
     Deposit.aggregate([{ $group: { _id: '$userId', total: { $sum: '$amount' } } }]),
+    // Most recent locked cycle before current month — provides previousMonthRate
+    BillingCycle.findOne({ isLocked: true, billingMonth: { $lt: currentMonth } })
+      .select('billingMonth mealRate')
+      .sort({ billingMonth: -1 }),
+    // Today's menu items for the portions table
+    Menu.find({ date: todayStr }),
+    // Projection helper (cycleDay, cycleTotal, projectedFinalRate)
+    projectRate(currentMonth),
   ]);
+
+  // Build lookup maps
+  const todayMenuMap = Object.fromEntries(
+    todayMenuDocs.map((m) => [m.mealType.toLowerCase(), m.items ?? []]),
+  );
+  const mealTypeSettingsMap = Object.fromEntries(
+    (settings?.mealTypes ?? []).map((mt) => [mt.name.toLowerCase(), mt]),
+  );
 
   const todayMealCounts = todayToggleAgg.map((t) => ({
     mealType: t._id,
     userCount: t.userCount,
     guestCount: t.guestCount,
     totalPortions: t.userCount + t.guestCount,
+    cutoffTime: mealTypeSettingsMap[t._id.toLowerCase()]?.cutoffTime ?? null,
+    menuItems: todayMenuMap[t._id.toLowerCase()] ?? [],
   }));
+
   const todayTotalGuests = todayMealCounts.reduce((sum, t) => sum + t.guestCount, 0);
 
   const totalPurchasesThisMonth = purchaseAgg[0]?.total ?? 0;
   const totalOtherCostsThisMonth = otherCostAgg[0]?.total ?? 0;
   const totalDepositsThisMonth = depositAgg[0]?.total ?? 0;
+  const totalMealsThisMonth = billing.totalMealCount;
 
   // Compute low-balance users via bulk aggregation
   const lockedMonths = lockedCycles.map((c) => c.billingMonth);
@@ -88,18 +110,23 @@ const getAdminDashboard = async (req, res) => {
   const lowBalanceThreshold = settings?.lowBalanceThreshold ?? 100;
   const activeUsers = await User.find({ status: 'active' }).select('_id name roomNumber');
   const lowBalanceUsers = activeUsers
-    .map((u) => ({
-      userId: u._id,
-      name: u.name,
-      roomNumber: u.roomNumber,
-      balance: (depositMap.get(u._id.toString()) ?? 0) - (billMap.get(u._id.toString()) ?? 0),
-    }))
+    .map((u) => {
+      const balance = (depositMap.get(u._id.toString()) ?? 0) - (billMap.get(u._id.toString()) ?? 0);
+      return {
+        userId: u._id,
+        name: u.name,
+        roomNumber: u.roomNumber,
+        balance,
+        warn: balance < lowBalanceThreshold,
+      };
+    })
     .filter((u) => u.balance < lowBalanceThreshold);
 
   const salaryMap = new Map(currentSalaries.map((s) => [s.chefId.toString(), s.paidStatus]));
   const chefSalaryStatus = activeChefs.map((c) => ({
     chefId: c._id,
     name: c.name,
+    salaryAmount: c.salaryAmount,
     paidStatus: salaryMap.get(c._id.toString()) ?? 'unpaid',
   }));
 
@@ -108,9 +135,14 @@ const getAdminDashboard = async (req, res) => {
     todayMealCounts,
     todayTotalGuests,
     predictedMealRate: billing.mealRate,
+    previousMonthRate: previousCycle?.mealRate ?? null,
     totalPurchasesThisMonth,
     totalOtherCostsThisMonth,
     totalDepositsThisMonth,
+    totalMealsThisMonth,
+    cycleDay: projection.cycleDay,
+    cycleTotal: projection.cycleTotal,
+    projectedFinalRate: projection.projectedFinalRate,
     lowBalanceUsers,
     lowStockItems,
     pendingApprovals: { count: pendingUsers.length, users: pendingUsers },
@@ -121,7 +153,6 @@ const getAdminDashboard = async (req, res) => {
 const getUserDashboard = async (req, res) => {
   const userId = req.user.userId;
 
-  // Fetch settings first to get timezone before constructing date strings
   const settings = await MessSettings.findOne();
   const timezone = settings?.timezone ?? 'Asia/Dhaka';
 

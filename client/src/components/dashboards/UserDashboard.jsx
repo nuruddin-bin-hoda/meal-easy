@@ -1,111 +1,85 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  Alert, Box, Card, CardContent, Chip, CircularProgress, Container,
-  Divider, Grid, IconButton, List, ListItem, ListItemText,
-  Stack, Switch, Typography,
+  Alert, Box, CircularProgress, Typography, useTheme,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import RemoveIcon from '@mui/icons-material/Remove';
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import NotificationsIcon from '@mui/icons-material/Notifications';
+import CheckIcon from '@mui/icons-material/Check';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
+import { useTopbar } from '../../context/TopbarContext';
 
-function ToggleCard({ toggle, menuItems = [], mealBlocked, saving, onToggle, onGuestStep, guestMealsLabel }) {
-  const { t } = useTranslation();
-  const disabled = toggle.isCutoffPassed || mealBlocked;
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
+const fmt = (n) => `৳${Number(n ?? 0).toFixed(2)}`;
+const getInitials = (name = '') => {
+  const p = name.trim().split(/\s+/);
+  return (p[0]?.[0] ?? '') + (p[p.length - 1]?.[0] ?? '');
+};
+
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'goodMorning';
+  if (h < 18) return 'goodAfternoon';
+  return 'goodEvening';
+}
+
+// ─── Toggle (custom design-spec implementation) ──────────────────────────────
+
+function MealToggle({ on, disabled, onChange }) {
+  const theme = useTheme();
+  const tok = theme.tokens;
   return (
-    <Card elevation={1} sx={{ mb: 1.5, opacity: toggle.isCutoffPassed ? 0.8 : 1 }}>
-      <CardContent sx={{ pb: '12px !important', pt: 1.5, px: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 40 }}>
-          <Box>
-            <Typography variant="subtitle2" fontWeight={600} sx={{ textTransform: 'capitalize' }}>
-              {toggle.mealType}
-            </Typography>
-            {toggle.cutoffTime && (
-              <Typography
-                variant="caption"
-                color={toggle.isCutoffPassed ? 'error.main' : 'text.secondary'}
-                sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}
-              >
-                {toggle.isCutoffPassed && <LockOutlinedIcon sx={{ fontSize: 11 }} />}
-                {t('meal.cutoffAt', { time: toggle.cutoffTime })}
-              </Typography>
-            )}
-          </Box>
-          {toggle.isCutoffPassed ? (
-            <LockOutlinedIcon fontSize="small" color="disabled" />
-          ) : saving ? (
-            <CircularProgress size={22} sx={{ mr: 0.5 }} />
-          ) : (
-            <Switch
-              checked={toggle.isOn}
-              onChange={(e) => onToggle(toggle.mealType, e.target.checked)}
-              disabled={disabled}
-              size="small"
-              color="primary"
-              inputProps={{ 'aria-label': `Toggle ${toggle.mealType}` }}
-            />
-          )}
-        </Box>
-
-        {menuItems.length > 0 && (
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-            {menuItems.map((item) => (
-              <Chip key={item} label={item} size="small" variant="outlined" />
-            ))}
-          </Box>
-        )}
-
-        {toggle.isOn && !toggle.isCutoffPassed && (
-          <>
-            <Divider sx={{ my: 1 }} />
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Typography variant="caption" color="text.secondary">
-                {guestMealsLabel}
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, ml: 'auto' }}>
-                <IconButton
-                  size="small"
-                  onClick={() => onGuestStep(toggle.mealType, -1)}
-                  disabled={disabled || toggle.guestCount === 0}
-                  sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: '4px' }}
-                  aria-label="Decrease guest count"
-                >
-                  <RemoveIcon fontSize="small" />
-                </IconButton>
-                <Typography sx={{ minWidth: 28, textAlign: 'center', fontWeight: 700 }}>
-                  {toggle.guestCount}
-                </Typography>
-                <IconButton
-                  size="small"
-                  onClick={() => onGuestStep(toggle.mealType, 1)}
-                  disabled={disabled}
-                  sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: '4px' }}
-                  aria-label="Increase guest count"
-                >
-                  <AddIcon fontSize="small" />
-                </IconButton>
-              </Box>
-            </Box>
-          </>
-        )}
-      </CardContent>
-    </Card>
+    <Box
+      component="button"
+      onClick={() => !disabled && onChange(!on)}
+      disabled={disabled}
+      sx={{
+        width: 40, height: 22, borderRadius: '999px',
+        bgcolor: on ? tok.ink : tok.soft,
+        border: 'none', cursor: disabled ? 'default' : 'pointer',
+        position: 'relative', flexShrink: 0, p: 0,
+        opacity: disabled ? 0.4 : 1,
+        transition: 'background 0.15s',
+        '&:focus-visible': { outline: `2px solid ${tok.brandSage}` },
+      }}
+    >
+      <Box sx={{
+        position: 'absolute', top: '50%', left: '2px',
+        width: 18, height: 18, borderRadius: '999px',
+        bgcolor: on ? tok.bg : tok.surface,
+        transform: `translate(${on ? 18 : 0}px, -50%)`,
+        transition: 'transform 0.15s',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+      }} />
+    </Box>
   );
 }
+
+// ─── UserDashboard ────────────────────────────────────────────────────────────
 
 export default function UserDashboard() {
   const { user } = useAuth();
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const theme = useTheme();
+  const tok = theme.tokens;
+  const { setTopbar } = useTopbar();
+
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [toggles, setToggles] = useState([]);
   const [saving, setSaving] = useState({});
+  const [lastSaved, setLastSaved] = useState(false);
   const debounceRef = useRef({});
+
+  const firstName = user?.name?.split(' ')[0] ?? '';
+
+  useEffect(() => {
+    setTopbar({ title: t('dashboard.userTitle'), subtitle: new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) });
+    return () => setTopbar({ title: '', subtitle: '', actions: null });
+  }, [t, setTopbar]);
 
   useEffect(() => {
     api.get('/dashboard/user')
@@ -121,229 +95,207 @@ export default function UserDashboard() {
     setSaving((s) => ({ ...s, [mealType]: true }));
     try {
       const { data: saved } = await api.post('/meals/toggle', { mealType, isOn, guestCount });
-      setToggles((prev) =>
-        prev.map((t) => t.mealType === mealType ? { ...t, isOn: saved.isOn, guestCount: saved.guestCount } : t),
-      );
-    } catch {
-      // silently revert
-    } finally {
-      setSaving((s) => ({ ...s, [mealType]: false }));
-    }
+      setToggles((prev) => prev.map((tg) => tg.mealType === mealType ? { ...tg, isOn: saved.isOn, guestCount: saved.guestCount } : tg));
+      setLastSaved(true);
+    } catch { /* silently revert */ }
+    finally { setSaving((s) => ({ ...s, [mealType]: false })); }
   }, []);
 
   const handleToggle = useCallback((mealType, isOn) => {
-    const current = toggles.find((t) => t.mealType === mealType);
-    const guestCount = isOn ? (current?.guestCount ?? 0) : 0;
-    setToggles((prev) => prev.map((t) => t.mealType === mealType ? { ...t, isOn, guestCount } : t));
-    save(mealType, isOn, guestCount);
+    const cur = toggles.find((tg) => tg.mealType === mealType);
+    setToggles((prev) => prev.map((tg) => tg.mealType === mealType ? { ...tg, isOn, guestCount: isOn ? (cur?.guestCount ?? 0) : 0 } : tg));
+    save(mealType, isOn, isOn ? (cur?.guestCount ?? 0) : 0);
   }, [toggles, save]);
 
   const handleGuestStep = useCallback((mealType, delta) => {
-    const current = toggles.find((t) => t.mealType === mealType);
-    const newCount = Math.max(0, (current?.guestCount ?? 0) + delta);
-    setToggles((prev) => prev.map((t) => t.mealType === mealType ? { ...t, guestCount: newCount } : t));
+    const cur = toggles.find((tg) => tg.mealType === mealType);
+    const next = Math.max(0, (cur?.guestCount ?? 0) + delta);
+    setToggles((prev) => prev.map((tg) => tg.mealType === mealType ? { ...tg, guestCount: next } : tg));
     if (debounceRef.current[mealType]) clearTimeout(debounceRef.current[mealType]);
-    debounceRef.current[mealType] = setTimeout(() => {
-      save(mealType, current?.isOn ?? true, newCount);
-    }, 600);
+    debounceRef.current[mealType] = setTimeout(() => save(mealType, cur?.isOn ?? true, next), 600);
   }, [toggles, save]);
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-  if (error) return <Alert severity="error" sx={{ m: 2 }}>{error}</Alert>;
+  if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}><CircularProgress /></Box>;
+  if (error)   return <Alert severity="error" sx={{ m: 2 }}>{error}</Alert>;
 
   const {
     balance = 0,
     predictedMealRate = 0,
     myMealCountThisMonth = 0,
     tomorrowMenu = [],
-    lowStockWarnings = [],
     recentNotifications = [],
   } = data;
 
   const menuMap = Object.fromEntries(tomorrowMenu.map((m) => [m.mealType, m.items]));
-  const balanceColor = balance >= 0 ? 'success.main' : 'error.main';
-  const balanceBg = balance >= 0 ? 'success.50' : 'error.50';
+  const mealOnCount = toggles.filter((tg) => tg.isOn).length;
+  const guestTotal  = toggles.reduce((s, tg) => s + (tg.isOn ? (tg.guestCount ?? 0) : 0), 0);
+  const estimatedCost = mealOnCount * predictedMealRate;
+  const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowLabel = tomorrow.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const monthName = new Date().toLocaleDateString('en-US', { month: 'short' });
+
+  const pad = { xs: '16px', md: '28px' };
 
   return (
-    <Container maxWidth="md" sx={{ py: 3 }}>
-      <Typography variant="h5" fontWeight={700} gutterBottom>
-        {t('dashboard.userTitle')}
-      </Typography>
+    <Box sx={{ p: pad, display: 'flex', flexDirection: 'column', gap: '12px', fontFeatureSettings: '"tnum","cv11"' }}>
 
-      {lowStockWarnings.length > 0 && (
-        <Alert severity="warning" sx={{ mb: 2 }}>
-          {t('dashboard.lowStockWarning')} {lowStockWarnings.join(', ')}
-        </Alert>
-      )}
+      {/* Greeting banner */}
+      <Box sx={{
+        bgcolor: tok.surface, border: `1px solid ${tok.hairline}`,
+        borderRadius: '12px', p: '16px 18px',
+        display: 'flex', alignItems: 'center', gap: '14px',
+      }}>
+        <Box sx={{ width: 4, height: 44, borderRadius: '2px', bgcolor: tok.accent, flexShrink: 0 }} />
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography sx={{ fontSize: 11, color: tok.muted, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500 }}>
+            {t(`dashboard.${greeting()}`)}
+          </Typography>
+          <Typography sx={{ fontSize: 18, fontWeight: 500, mt: '2px', color: tok.ink }}>
+            {firstName}
+          </Typography>
+          <Typography sx={{ fontSize: 11, color: tok.muted, mt: '4px', fontVariantNumeric: 'tabular-nums' }}>
+            {t('dashboard.cutoffClosesIn')}
+          </Typography>
+        </Box>
+        <Box
+          component="button"
+          onClick={() => navigate('/meals')}
+          sx={{
+            fontSize: 12, px: '12px', py: '6px', borderRadius: '8px',
+            bgcolor: tok.btnBg, color: tok.btnInk, border: 'none',
+            fontFamily: 'inherit', fontWeight: 500, cursor: 'pointer',
+            flexShrink: 0, whiteSpace: 'nowrap',
+            '&:hover': { opacity: 0.88 },
+          }}
+        >
+          {t('dashboard.planTomorrow')} →
+        </Box>
+      </Box>
 
       {user?.mealBlocked && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {t('dashboard.mealBlocked')}
-        </Alert>
+        <Alert severity="error">{t('dashboard.mealBlocked')}</Alert>
       )}
 
-      <Grid container spacing={2}>
+      {/* KPI tiles — 3-up */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+        {[
+          { label: t('dashboard.balance'),        value: fmt(balance),           sub: balance >= 0 ? '' : '⚠ Low', color: balance >= 0 ? tok.posInk : tok.dangerInk },
+          { label: `${t('dashboard.mealsThisMonth')} · ${monthName}`, value: String(myMealCountThisMonth), sub: t('dashboard.mealsToggledOn'), color: tok.ink },
+          { label: t('dashboard.predictedRate'),  value: fmt(predictedMealRate), sub: t('dashboard.perMeal'), color: tok.ink },
+        ].map((k, i) => (
+          <Box key={i} sx={{ bgcolor: tok.surface, border: `1px solid ${tok.hairline}`, borderRadius: '12px', p: '12px 14px' }}>
+            <Typography sx={{ fontSize: 10, color: tok.muted, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500 }}>
+              {k.label}
+            </Typography>
+            <Typography sx={{ fontSize: 18, fontWeight: 500, letterSpacing: '-0.02em', mt: '3px', fontVariantNumeric: 'tabular-nums', color: k.color ?? tok.ink }}>
+              {k.value}
+            </Typography>
+            {k.sub && <Typography sx={{ fontSize: 11, color: tok.dim, mt: '1px' }}>{k.sub}</Typography>}
+          </Box>
+        ))}
+      </Box>
 
-        {/* Balance */}
-        <Grid size={{ xs: 12, sm: 4 }}>
-          <Card elevation={2} sx={{ bgcolor: balanceBg, height: '100%' }}>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                {t('dashboard.balance')}
-              </Typography>
-              <Typography variant="h4" fontWeight={700} sx={{ color: balanceColor }}>
-                ৳{balance.toFixed(2)}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+      {/* Tomorrow's meals — single sheet */}
+      <Box sx={{ bgcolor: tok.surface, border: `1px solid ${tok.hairline}`, borderRadius: '12px' }}>
+        {/* Header */}
+        <Box sx={{ p: '14px 16px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box>
+            <Typography sx={{ fontSize: 11, color: tok.muted, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500 }}>
+              {t('dashboard.tomorrowMeals')}
+            </Typography>
+            <Typography sx={{ fontSize: 15, fontWeight: 500, mt: '2px', color: tok.ink }}>{tomorrowLabel}</Typography>
+          </Box>
+        </Box>
 
-        {/* Predicted rate */}
-        <Grid size={{ xs: 12, sm: 4 }}>
-          <Card elevation={2} sx={{ height: '100%' }}>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                {t('dashboard.predictedRate')}
-              </Typography>
-              <Typography variant="h4" fontWeight={700}>
-                ৳{predictedMealRate.toFixed(2)}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">{t('dashboard.perMeal')}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Meals this month */}
-        <Grid size={{ xs: 12, sm: 4 }}>
-          <Card elevation={2} sx={{ height: '100%' }}>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                {t('dashboard.mealsThisMonth')}
-              </Typography>
-              <Typography variant="h4" fontWeight={700} color="primary">
-                {myMealCountThisMonth}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">{t('dashboard.mealsToggledOn')}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Tomorrow's menu */}
-        <Grid size={{ xs: 12, md: 5 }}>
-          <Card elevation={2}>
-            <CardContent>
-              <Typography variant="subtitle1" fontWeight={700} gutterBottom>
-                {t('dashboard.tomorrowMenu')}
-              </Typography>
-              {tomorrowMenu.length === 0 ? (
-                <Typography variant="body2" color="text.secondary">
-                  {t('dashboard.menuNotSet')}
-                </Typography>
-              ) : (
-                <Stack spacing={1.5}>
-                  {tomorrowMenu.map((m) => (
-                    <Box key={m.mealType}>
-                      <Typography
-                        variant="caption"
-                        fontWeight={600}
-                        color="text.secondary"
-                        sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}
-                      >
-                        {m.mealType}
-                      </Typography>
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                        {m.items.length === 0 ? (
-                          <Typography variant="body2" color="text.disabled">—</Typography>
-                        ) : m.items.map((item) => (
-                          <Chip key={item} label={item} size="small" variant="outlined" />
-                        ))}
-                      </Box>
-                    </Box>
-                  ))}
-                </Stack>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Quick-access meal toggles */}
-        <Grid size={{ xs: 12, md: 7 }}>
-          <Card elevation={2}>
-            <CardContent>
-              <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>
-                {t('meal.todayMeals')}
-              </Typography>
-
-              {toggles.length === 0 ? (
-                <Typography variant="body2" color="text.secondary">
-                  {t('dashboard.noMealToggles')}
-                </Typography>
-              ) : toggles.map((toggle) => (
-                <ToggleCard
-                  key={toggle.mealType}
-                  toggle={toggle}
-                  menuItems={menuMap[toggle.mealType] ?? []}
-                  mealBlocked={!!user?.mealBlocked}
-                  saving={!!saving[toggle.mealType]}
-                  onToggle={handleToggle}
-                  onGuestStep={handleGuestStep}
-                  guestMealsLabel={t('dashboard.guestMeals')}
-                />
-              ))}
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Recent notifications */}
-        <Grid size={12}>
-          <Card elevation={2}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <NotificationsIcon fontSize="small" color="action" />
-                <Typography variant="subtitle1" fontWeight={700}>
-                  {t('dashboard.recentNotifications')}
-                </Typography>
+        {toggles.length === 0 ? (
+          <Box sx={{ p: '12px 16px', borderTop: `1px solid ${tok.hairlineSoft}` }}>
+            <Typography sx={{ fontSize: 14, color: tok.muted }}>{t('dashboard.noMealToggles')}</Typography>
+          </Box>
+        ) : toggles.map((toggle, i) => {
+          const items = menuMap[toggle.mealType] ?? [];
+          return (
+            <Box key={toggle.mealType} sx={{
+              p: '12px 16px', borderTop: `1px solid ${tok.hairlineSoft}`,
+              display: 'flex', alignItems: 'center', gap: '12px',
+            }}>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Box sx={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                  <Typography sx={{ fontSize: 14, fontWeight: 500, textTransform: 'capitalize', color: tok.ink }}>
+                    {toggle.mealType}
+                  </Typography>
+                  {toggle.cutoffTime && (
+                    <Typography sx={{ fontSize: 11, color: tok.muted, fontVariantNumeric: 'tabular-nums' }}>
+                      {toggle.cutoffTime}
+                    </Typography>
+                  )}
+                </Box>
+                {items.length > 0 && (
+                  <Typography sx={{ fontSize: 12, color: tok.muted, mt: '4px', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {items.join(' · ')}
+                  </Typography>
+                )}
               </Box>
-              {recentNotifications.length === 0 ? (
-                <Typography variant="body2" color="text.secondary">
-                  {t('dashboard.noNotifications')}
-                </Typography>
-              ) : (
-                <List dense disablePadding>
-                  {recentNotifications.map((n, i) => (
-                    <ListItem
-                      key={n._id}
-                      disableGutters
-                      sx={{
-                        opacity: n.isRead ? 0.6 : 1,
-                        borderBottom: i < recentNotifications.length - 1 ? '1px solid' : 'none',
-                        borderColor: 'divider',
-                      }}
-                    >
-                      <ListItemText
-                        primary={n.message}
-                        secondary={new Date(n.createdAt).toLocaleString()}
-                        primaryTypographyProps={{ variant: 'body2', fontWeight: n.isRead ? 400 : 600 }}
-                        secondaryTypographyProps={{ variant: 'caption' }}
-                      />
-                      {!n.isRead && (
-                        <Chip label={t('common.new')} color="primary" size="small" sx={{ ml: 1, flexShrink: 0 }} />
-                      )}
-                    </ListItem>
-                  ))}
-                </List>
+              {toggle.isOn && (toggle.guestCount ?? 0) > 0 && (
+                <Box component="span" sx={{ fontSize: 10, fontWeight: 500, px: '8px', py: '2px', borderRadius: '999px', bgcolor: tok.soft, color: tok.muted }}>
+                  +{toggle.guestCount} guest
+                </Box>
               )}
-            </CardContent>
-          </Card>
-        </Grid>
+              {toggle.isCutoffPassed ? (
+                <Typography sx={{ fontSize: 11, color: tok.dim }}>Locked</Typography>
+              ) : (
+                <MealToggle on={toggle.isOn} disabled={!!user?.mealBlocked || toggle.isCutoffPassed} onChange={(v) => handleToggle(toggle.mealType, v)} />
+              )}
+            </Box>
+          );
+        })}
 
-      </Grid>
-    </Container>
+        {/* Footer summary */}
+        <Box sx={{
+          p: '10px 16px', borderTop: `1px solid ${tok.hairlineSoft}`,
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          fontSize: 12, color: tok.muted,
+        }}>
+          <Typography sx={{ fontSize: 12, color: tok.muted }}>
+            {mealOnCount} of {toggles.length} meals · {guestTotal} guests · {fmt(estimatedCost)}
+          </Typography>
+          {lastSaved && (
+            <Typography sx={{ fontSize: 12, color: tok.posInk, fontWeight: 500, display: 'flex', alignItems: 'center', gap: '3px' }}>
+              <CheckIcon sx={{ fontSize: 12 }} /> {t('dashboard.autoSaved')}
+            </Typography>
+          )}
+        </Box>
+      </Box>
+
+      {/* Recent notifications */}
+      <Box sx={{ bgcolor: tok.surface, border: `1px solid ${tok.hairline}`, borderRadius: '12px', p: '14px 16px 8px' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: '10px' }}>
+          <Typography sx={{ fontSize: 11, color: tok.muted, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500 }}>
+            {t('dashboard.recentNotifications')}
+          </Typography>
+          <Box component="span" onClick={() => navigate('/notifications')} sx={{ fontSize: 12, color: tok.muted, cursor: 'pointer', '&:hover': { color: tok.ink } }}>
+            {t('dashboard.seeAll')} →
+          </Box>
+        </Box>
+        {recentNotifications.length === 0 ? (
+          <Typography sx={{ fontSize: 14, color: tok.muted, pb: '6px' }}>{t('dashboard.noNotifications')}</Typography>
+        ) : recentNotifications.map((n, i) => (
+          <Box key={n._id} sx={{
+            display: 'flex', alignItems: 'flex-start', gap: '10px',
+            p: '8px 0', borderTop: i === 0 ? 'none' : `1px solid ${tok.hairlineSoft}`,
+          }}>
+            <Box sx={{ width: 4, height: 4, borderRadius: '999px', bgcolor: n.isRead ? tok.dim : tok.accent, mt: '8px', flexShrink: 0 }} />
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography sx={{ fontSize: 13, fontWeight: n.isRead ? 400 : 500, color: tok.ink, lineHeight: 1.4 }}>
+                {n.message}
+              </Typography>
+              <Typography sx={{ fontSize: 11, color: tok.muted, mt: '1px' }}>
+                {new Date(n.createdAt).toLocaleString()}
+              </Typography>
+            </Box>
+          </Box>
+        ))}
+      </Box>
+
+    </Box>
   );
 }

@@ -2,15 +2,25 @@ import { useState, useEffect } from 'react';
 import {
   Alert, Box, Button, Card, CardContent, CircularProgress,
   Container, Divider, FormControl, IconButton, InputLabel,
-  MenuItem, Select, Snackbar, Stack, TextField, Typography,
+  MenuItem, Select, Snackbar, Stack, TextField, Typography, useTheme,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
+import { useTopbar } from '../context/TopbarContext';
 
 export default function SettingsPage() {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const { setTopbar } = useTopbar();
+
+  useEffect(() => {
+    setTopbar({ title: t('nav.settings') });
+    return () => setTopbar({ title: '', subtitle: '', actions: null });
+  }, [t, setTopbar]);
+
   const [settings, setSettings] = useState(null);
   const [loading, setLoading]   = useState(true);
   const [saving, setSaving]     = useState(false);
@@ -157,8 +167,8 @@ export default function SettingsPage() {
                     p: 1.25,
                     borderRadius: 1.5,
                     border: '1px solid',
-                    borderColor: mt.isActive ? 'success.light' : 'divider',
-                    bgcolor: mt.isActive ? 'success.50' : 'transparent',
+                    borderColor: mt.isActive ? (isDark ? '#1a3a2a' : '#EAF3DE') : 'divider',
+                    bgcolor: mt.isActive ? (isDark ? '#1a3a2a' : '#EAF3DE') : 'transparent',
                   }}
                 >
                   <Button

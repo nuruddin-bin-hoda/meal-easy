@@ -1,14 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
+import dayjs from 'dayjs';
 import {
   Alert, Box, Button, Card, CardContent, CardHeader, CircularProgress,
   Container, MenuItem, Snackbar, Stack, Table, TableBody, TableCell,
   TableHead, TableRow, TextField, Typography,
 } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { useTopbar } from '../context/TopbarContext';
 
 const today = () => format(new Date(), 'yyyy-MM-dd');
 const EMPTY_FORM = { buyerUserId: '', item: '', quantity: '', unit: '', price: '', date: today() };
@@ -17,6 +20,12 @@ export default function PurchasesPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { setTopbar } = useTopbar();
+
+  useEffect(() => {
+    setTopbar({ title: t('purchases.title'), subtitle: 'Admin' });
+    return () => setTopbar({ title: '', subtitle: '', actions: null });
+  }, [t, setTopbar]);
 
   const [users, setUsers] = useState([]);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -121,10 +130,11 @@ export default function PurchasesPage() {
                   slotProps={{ htmlInput: { min: 0, step: 'any' } }}
                   onChange={handleField('price')} sx={{ flex: 1 }}
                 />
-                <TextField
-                  label={t('purchases.date')} type="date" value={form.date} required
-                  onChange={handleField('date')}
-                  slotProps={{ inputLabel: { shrink: true } }} sx={{ flex: 1 }}
+                <DatePicker
+                  label={t('purchases.date')}
+                  value={form.date ? dayjs(form.date) : null}
+                  onChange={(newVal) => setForm(f => ({ ...f, date: newVal ? newVal.format('YYYY-MM-DD') : '' }))}
+                  slotProps={{ textField: { size: 'small', required: true, sx: { flex: 1 } } }}
                 />
               </Stack>
               <Box>
@@ -140,15 +150,17 @@ export default function PurchasesPage() {
       <Card elevation={1} sx={{ mb: 2 }}>
         <CardContent sx={{ py: '12px !important' }}>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
-            <TextField
-              label={t('purchases.from')} type="date" value={filters.startDate} size="small"
-              onChange={e => setFilters(f => ({ ...f, startDate: e.target.value }))}
-              slotProps={{ inputLabel: { shrink: true } }}
+            <DatePicker
+              label={t('purchases.from')}
+              value={filters.startDate ? dayjs(filters.startDate) : null}
+              onChange={(newVal) => setFilters(f => ({ ...f, startDate: newVal ? newVal.format('YYYY-MM-DD') : '' }))}
+              slotProps={{ textField: { size: 'small' } }}
             />
-            <TextField
-              label={t('purchases.to')} type="date" value={filters.endDate} size="small"
-              onChange={e => setFilters(f => ({ ...f, endDate: e.target.value }))}
-              slotProps={{ inputLabel: { shrink: true } }}
+            <DatePicker
+              label={t('purchases.to')}
+              value={filters.endDate ? dayjs(filters.endDate) : null}
+              onChange={(newVal) => setFilters(f => ({ ...f, endDate: newVal ? newVal.format('YYYY-MM-DD') : '' }))}
+              slotProps={{ textField: { size: 'small' } }}
             />
             <TextField
               select label={t('purchases.buyer')} value={filters.buyerUserId} size="small" sx={{ minWidth: 160 }}

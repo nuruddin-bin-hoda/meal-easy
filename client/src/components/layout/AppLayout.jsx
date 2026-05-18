@@ -1,408 +1,458 @@
 import { useState } from 'react';
 import {
-  AppBar, Avatar, BottomNavigation, BottomNavigationAction, Box,
-  Divider, Drawer, IconButton, List, ListItem, ListItemButton,
-  ListItemIcon, ListItemText, Menu, MenuItem as MuiMenuItem, Paper,
-  Toolbar, Tooltip, Typography, useMediaQuery, useTheme,
+  Avatar, Box, Drawer, IconButton, Tooltip, Typography,
+  useMediaQuery, useTheme,
 } from '@mui/material';
 import {
-  AccountBalanceWallet as DepositIcon,
-  Assessment as ReportsIcon,
-  Dashboard as DashboardIcon,
-  Edit as EditIcon,
+  Assessment as ReportIcon,
   Inventory as StockIcon,
+  DarkMode as DarkModeIcon,
+  LightMode as LightModeIcon,
   Logout as LogoutIcon,
   ManageSearch as AuditIcon,
-  Menu as HamburgerIcon,
   MenuBook as MenuBookIcon,
-  MoreHoriz as MoreIcon,
-  Notifications as NotificationsIcon,
+  Notifications as BellIcon,
   People as UsersIcon,
   Person as ProfileIcon,
-  Receipt as ReceiptIcon,
-  ReceiptLong as BillingIcon,
   Restaurant as MealsIcon,
-  Settings as SettingsIcon,
-  ShoppingCart as PurchasesIcon,
   SoupKitchen as ChefsIcon,
+  Settings as SettingsIcon,
+  AccountBalanceWallet as DepositsIcon,
+  ShoppingCart as PurchasesIcon,
+  Receipt as CostsIcon,
+  ReceiptLong as BillingIcon,
+  GridView as DashboardIcon,
+  MoreHoriz as MoreIcon,
+  Close as CloseIcon,
+  Search as SearchIcon,
 } from '@mui/icons-material';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
+import { useColorMode } from '../../context/ThemeContext';
+import { useTopbar } from '../../context/TopbarContext';
 import NotificationBell from '../NotificationBell';
 import api from '../../api/axios';
 
-const DRAWER_WIDTH = 240;
+// ─── Plate mark SVG ────────────────────────────────────────────────────────────
 
-// ── nav item definitions ─────────────────────────────────────────────────────
-const NAV_CONFIG = {
-  admin: [
-    { key: 'nav.dashboard',    path: '/dashboard',  Icon: DashboardIcon },
-    { key: 'nav.users',        path: '/users',       Icon: UsersIcon },
-    { key: 'nav.meals',        path: '/meals',       Icon: MealsIcon },
-    { key: 'nav.menu',         path: '/menu',        Icon: MenuBookIcon },
-    { key: 'nav.setMenu',      path: '/menu/set',    Icon: EditIcon },
-    { key: 'nav.purchases',    path: '/purchases',   Icon: PurchasesIcon },
-    { key: 'nav.costs',        path: '/costs',        Icon: ReceiptIcon },
-    { key: 'nav.deposits',     path: '/deposits',    Icon: DepositIcon },
-    { key: 'nav.stock',        path: '/stock',       Icon: StockIcon },
-    { key: 'nav.chefs',        path: '/chefs',       Icon: ChefsIcon },
-    { key: 'nav.billing',      path: '/billing',     Icon: BillingIcon },
-    { key: 'nav.reports',      path: '/reports',     Icon: ReportsIcon },
-    { key: 'nav.auditLogs',    path: '/audit-logs',  Icon: AuditIcon },
-    { key: 'nav.settings',     path: '/settings',    Icon: SettingsIcon },
-  ],
-  user: [
-    { key: 'nav.dashboard',    path: '/dashboard',       Icon: DashboardIcon },
-    { key: 'nav.meals',        path: '/meals',            Icon: MealsIcon },
-    { key: 'nav.menu',         path: '/menu',             Icon: MenuBookIcon },
-    { key: 'nav.reports',      path: '/reports',          Icon: ReportsIcon },
-    { key: 'nav.stock',        path: '/stock',            Icon: StockIcon },
-    { key: 'nav.notifications',path: '/notifications',    Icon: NotificationsIcon },
-    { key: 'nav.auditLogs',    path: '/audit-logs',       Icon: AuditIcon },
-    { key: 'nav.profile',      path: '/profile',          Icon: ProfileIcon },
-  ],
-  chef: [
-    { key: 'nav.dashboard',    path: '/dashboard',   Icon: DashboardIcon },
-    { key: 'nav.menu',         path: '/menu',         Icon: MenuBookIcon },
-    { key: 'nav.stock',        path: '/stock',        Icon: StockIcon },
-    { key: 'nav.profile',      path: '/profile',      Icon: ProfileIcon },
-  ],
-};
+function PlateMark({ size = 30, surfaceColor }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: 'block', flexShrink: 0 }}>
+      <circle cx="50" cy="52" r="34" fill="#7F9E6E"/>
+      <circle cx="50" cy="52" r="29" fill={surfaceColor}/>
+      <circle cx="55" cy="55" r="17" fill="#5A7140"/>
+      <circle cx="38" cy="42" r="3.5" fill="currentColor"/>
+    </svg>
+  );
+}
 
-// Bottom nav — first 4 tabs + optional "More"
-const BOTTOM_NAV_CONFIG = {
-  admin: [
-    { key: 'nav.dashboard', path: '/dashboard', Icon: DashboardIcon },
-    { key: 'nav.meals',     path: '/meals',     Icon: MealsIcon },
-    { key: 'nav.menu',      path: '/menu',      Icon: MenuBookIcon },
-    { key: 'nav.reports',   path: '/reports',   Icon: ReportsIcon },
-    { key: 'nav.more',      path: '__more__',   Icon: MoreIcon },
-  ],
-  user: [
-    { key: 'nav.dashboard', path: '/dashboard', Icon: DashboardIcon },
-    { key: 'nav.meals',     path: '/meals',     Icon: MealsIcon },
-    { key: 'nav.menu',      path: '/menu',      Icon: MenuBookIcon },
-    { key: 'nav.reports',   path: '/reports',   Icon: ReportsIcon },
-    { key: 'nav.more',      path: '__more__',   Icon: MoreIcon },
-  ],
-  chef: [
-    { key: 'nav.dashboard', path: '/dashboard', Icon: DashboardIcon },
-    { key: 'nav.menu',      path: '/menu',      Icon: MenuBookIcon },
-    { key: 'nav.stock',     path: '/stock',     Icon: StockIcon },
-  ],
-};
+// ─── Nav configs ───────────────────────────────────────────────────────────────
 
-const AVATAR_BG = {
-  superadmin: '#b71c1c',
-  admin:      '#e65100',
-  user:       '#1565c0',
-  chef:       '#2e7d32',
-};
+const NAV_USER = [
+  { path: '/dashboard', label: 'nav.dashboard',  Icon: DashboardIcon },
+  { path: '/meals',     label: 'nav.meals',       Icon: MealsIcon     },
+  { path: '/menu',      label: 'nav.menu',        Icon: MenuBookIcon  },
+  { path: '/reports',   label: 'nav.reports',     Icon: ReportIcon    },
+  { path: '/profile',   label: 'nav.profile',     Icon: ProfileIcon   },
+];
+
+const NAV_ADMIN = [
+  { path: '/dashboard',  label: 'nav.dashboard',  Icon: DashboardIcon },
+  { path: '/meals',      label: 'nav.mealTotals', Icon: MealsIcon     },
+  { path: '/menu/set',   label: 'nav.setMenu',    Icon: MenuBookIcon  },
+  { path: '/purchases',  label: 'nav.purchases',  Icon: PurchasesIcon },
+  { path: '/costs',      label: 'nav.costs',      Icon: CostsIcon     },
+  { path: '/deposits',   label: 'nav.deposits',   Icon: DepositsIcon  },
+  { path: '/billing',    label: 'nav.billing',    Icon: BillingIcon   },
+  { path: '/stock',      label: 'nav.stock',      Icon: StockIcon     },
+  { path: '/chefs',      label: 'nav.chefs',      Icon: ChefsIcon     },
+  { path: '/users',      label: 'nav.users',      Icon: UsersIcon     },
+  { path: '/audit-logs', label: 'nav.auditLogs',  Icon: AuditIcon     },
+];
+
+const NAV_CHEF = [
+  { path: '/dashboard', label: 'nav.dashboard', Icon: DashboardIcon },
+  { path: '/stock',     label: 'nav.stock',     Icon: StockIcon     },
+  { path: '/profile',   label: 'nav.profile',   Icon: ProfileIcon   },
+];
+
+// Mobile bottom tabs
+const TABS_USER = [
+  { path: '/dashboard', label: 'Home',   Icon: DashboardIcon },
+  { path: '/meals',     label: 'Meals',  Icon: MealsIcon     },
+  { path: '/menu',      label: 'Menu',   Icon: MenuBookIcon  },
+  { path: '/reports',   label: 'Report', Icon: ReportIcon    },
+  { path: '__more__',   label: 'More',   Icon: MoreIcon      },
+];
+
+const TABS_ADMIN = [
+  { path: '/dashboard', label: 'Home',  Icon: DashboardIcon },
+  { path: '/meals',     label: 'Meals', Icon: MealsIcon     },
+  { path: '/stock',     label: 'Stock', Icon: StockIcon     },
+  { path: '/billing',   label: 'Money', Icon: BillingIcon   },
+  { path: '__more__',   label: 'More',  Icon: MoreIcon      },
+];
+
+const TABS_CHEF = [
+  { path: '/dashboard', label: 'Today',   Icon: DashboardIcon },
+  { path: '/stock',     label: 'Stock',   Icon: StockIcon     },
+  { path: '/profile',   label: 'Profile', Icon: ProfileIcon   },
+];
+
+// ─── Helpers ───────────────────────────────────────────────────────────────────
 
 const getInitials = (name = '') => {
   const parts = name.trim().split(/\s+/);
   if (!parts[0]) return '?';
-  if (parts.length === 1) return parts[0][0].toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  return (parts[0][0] + (parts[parts.length - 1]?.[0] ?? '')).toUpperCase();
 };
+
+const ROLE_LABELS = {
+  superadmin: 'Admin',
+  admin:      'Admin',
+  chef:       'Kitchen',
+  user:       'Member',
+};
+
+// ─── Sidebar nav item ──────────────────────────────────────────────────────────
+
+function NavItem({ path, label, Icon, active, onClick, tok }) {
+  return (
+    <Box
+      component="button"
+      onClick={onClick}
+      sx={{
+        display: 'flex', alignItems: 'center', gap: '10px',
+        width: '100%', px: '10px', py: '8px', borderRadius: '8px',
+        border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+        mb: '2px', textAlign: 'left',
+        bgcolor: active ? tok.soft : 'transparent',
+        color: active ? tok.ink : tok.muted,
+        fontSize: 13, fontWeight: active ? 500 : 400,
+        transition: 'background 0.12s',
+        '&:hover': { bgcolor: tok.soft, color: tok.ink },
+      }}
+    >
+      <Icon sx={{ fontSize: 17, flexShrink: 0, strokeWidth: active ? 1.9 : 1.55 }} />
+      <span>{label}</span>
+    </Box>
+  );
+}
+
+// ─── AppLayout ─────────────────────────────────────────────────────────────────
 
 export default function AppLayout({ children }) {
   const { user, logout } = useAuth();
+  const { mode, toggleMode } = useColorMode();
+  const { title, subtitle, actions } = useTopbar();
   const navigate   = useNavigate();
   const location   = useLocation();
   const { t, i18n } = useTranslation();
   const theme      = useTheme();
+  const tok        = theme.tokens;
   const isMobile   = useMediaQuery(theme.breakpoints.down('md'));
 
-  const [mobileOpen,    setMobileOpen]    = useState(false);
-  const [userMenuAnchor, setUserMenuAnchor] = useState(null);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const isDark = mode === 'dark';
 
-  const role         = user?.role ?? 'user';
-  const cfgRole      = role === 'superadmin' ? 'admin' : role;
-  const navItems     = NAV_CONFIG[cfgRole]       ?? NAV_CONFIG.user;
-  const bottomItems  = BOTTOM_NAV_CONFIG[cfgRole] ?? BOTTOM_NAV_CONFIG.user;
-  const currentLang  = (i18n.language || 'en').startsWith('bn') ? 'bn' : 'en';
+  const role    = user?.role ?? 'user';
+  const cfgRole = role === 'superadmin' ? 'admin' : role;
+  const navItems = cfgRole === 'admin' ? NAV_ADMIN : cfgRole === 'chef' ? NAV_CHEF : NAV_USER;
+  const tabs     = cfgRole === 'admin' ? TABS_ADMIN : cfgRole === 'chef' ? TABS_CHEF : TABS_USER;
 
-  // Determine which nav item matches the current route
-  const isActive = (path) => location.pathname === path;
+  const currentLang = (i18n.language || 'en').startsWith('bn') ? 'bn' : 'en';
 
-  // Active value for BottomNavigation
-  const activeBottom = (() => {
-    for (const item of bottomItems) {
-      if (item.path !== '__more__' && isActive(item.path)) return item.path;
-    }
-    return bottomItems.some((i) => i.path === '__more__') ? '__more__' : null;
-  })();
-
-  const handleBottomChange = (_, value) => {
-    if (value === '__more__') setMobileOpen(true);
-    else navigate(value);
-  };
-
-  const handleLangChange = (lang) => {
-    i18n.changeLanguage(lang);
-    if (user?._id) api.patch(`/users/${user._id}`, { language: lang }).catch(() => {});
+  const isActive = (path) => {
+    if (path === '/dashboard') return location.pathname === '/dashboard';
+    return location.pathname.startsWith(path);
   };
 
   const handleLogout = async () => {
-    setUserMenuAnchor(null);
     await logout();
     navigate('/login', { replace: true });
   };
 
-  // ── drawer body (shared between mobile overlay + desktop permanent) ────────
-  const drawerBody = (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* User card */}
-      <Box sx={{ px: 2, py: 1.75, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <Avatar sx={{ bgcolor: AVATAR_BG[role] ?? '#1565c0', width: 38, height: 38, fontSize: '0.85rem' }}>
-          {getInitials(user?.name)}
-        </Avatar>
-        <Box sx={{ minWidth: 0 }}>
-          <Typography variant="body2" fontWeight={600} noWrap>{user?.name ?? '—'}</Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'capitalize' }}>
-            {role}
+  const handleLang = (lang) => {
+    i18n.changeLanguage(lang);
+    if (user?._id) api.patch(`/users/${user._id}`, { language: lang }).catch(() => {});
+  };
+
+  const roleLabel = ROLE_LABELS[role] ?? 'Member';
+  const userName  = user?.name ?? '—';
+  const roomNo    = user?.roomNumber ?? '';
+
+  // Platform-specific plate inner color
+  const plateRim = isDark ? tok.surface : '#FFFFFF';
+
+  // ── Sidebar content (shared between desktop permanent + mobile drawer) ─────
+  const sidebarContent = (
+    <Box sx={{
+      width: 240, height: '100%', display: 'flex', flexDirection: 'column',
+      bgcolor: tok.surface, borderRight: `1px solid ${tok.hairline}`,
+    }}>
+      {/* Logo header */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', px: '18px', pt: '20px', pb: '14px' }}>
+        <Box sx={{
+          width: 30, height: 30, borderRadius: '7px', bgcolor: tok.soft,
+          display: 'grid', placeItems: 'center', flexShrink: 0, color: tok.ink,
+        }}>
+          <PlateMark size={30} surfaceColor={plateRim} />
+        </Box>
+        <Box>
+          <Typography sx={{ fontSize: 14, fontWeight: 500, letterSpacing: '-0.01em', color: tok.ink }}>
+            Meal Easy
+          </Typography>
+          <Typography sx={{ fontSize: 10, color: tok.muted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            {roleLabel}
           </Typography>
         </Box>
       </Box>
 
-      <Divider />
+      {/* Nav list */}
+      <Box sx={{ flex: 1, overflowY: 'auto', px: '10px' }}>
+        {navItems.map(({ path, label, Icon }) => (
+          <NavItem
+            key={path}
+            path={path}
+            label={t(label)}
+            Icon={Icon}
+            active={isActive(path)}
+            tok={tok}
+            onClick={() => { navigate(path); setMoreOpen(false); }}
+          />
+        ))}
+      </Box>
 
-      {/* Nav items */}
-      <List dense sx={{ flex: 1, overflowY: 'auto', px: 1, pt: 0.5 }}>
-        {navItems.map(({ key, path, Icon }) => {
-          const active = isActive(path);
-          return (
-            <ListItem key={path} disablePadding sx={{ mb: 0.25 }}>
-              <ListItemButton
-                selected={active}
-                onClick={() => { navigate(path); setMobileOpen(false); }}
-                sx={{
-                  borderRadius: 1.5,
-                  py: 0.75,
-                  '&.Mui-selected': {
-                    bgcolor: 'success.dark',
-                    color: 'white',
-                    '& .MuiListItemIcon-root': { color: 'white' },
-                    '&:hover': { bgcolor: 'success.main' },
-                  },
-                }}
-              >
-                <ListItemIcon sx={{ minWidth: 34 }}>
-                  <Icon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText
-                  primary={t(key)}
-                  primaryTypographyProps={{ variant: 'body2', fontWeight: active ? 600 : 400 }}
-                />
-              </ListItemButton>
-            </ListItem>
-          );
-        })}
-      </List>
+      {/* Footer */}
+      <Box sx={{
+        display: 'flex', alignItems: 'center', gap: '10px',
+        px: '14px', py: '14px',
+        borderTop: `1px solid ${tok.hairlineSoft}`,
+      }}>
+        <Avatar sx={{ width: 32, height: 32, bgcolor: '#7F9E6E', color: '#FAF8F3', fontSize: 12, fontWeight: 500, flexShrink: 0 }}>
+          {getInitials(userName)}
+        </Avatar>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography sx={{ fontSize: 13, fontWeight: 500, color: tok.ink }} noWrap>
+            {userName.split(' ').slice(0, 2).join(' ')}
+          </Typography>
+          <Typography sx={{ fontSize: 11, color: tok.muted }} noWrap>
+            {cfgRole === 'admin' ? roleLabel : cfgRole === 'chef' ? 'Chef' : roomNo || roleLabel}
+          </Typography>
+        </Box>
+        <Tooltip title={t('nav.logout')}>
+          <IconButton size="small" onClick={handleLogout} sx={{ color: tok.muted, width: 28, height: 28, borderRadius: '6px' }}>
+            <LogoutIcon sx={{ fontSize: 14 }} />
+          </IconButton>
+        </Tooltip>
+      </Box>
     </Box>
   );
 
-  return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'grey.50' }}>
-
-      {/* ── AppBar ──────────────────────────────────────────────────────── */}
-      <AppBar
-        position="fixed"
-        elevation={1}
-        sx={{ bgcolor: 'success.dark', zIndex: (t) => t.zIndex.drawer + 1 }}
-      >
-        <Toolbar sx={{ gap: 0.5 }}>
-          {/* Hamburger — mobile only */}
-          {isMobile && (
-            <IconButton
-              color="inherit"
-              edge="start"
-              onClick={() => setMobileOpen(true)}
-              aria-label="open navigation"
-              sx={{ mr: 0.5 }}
-            >
-              <HamburgerIcon />
-            </IconButton>
-          )}
-
-          {/* App name */}
-          <Typography
-            variant="h6"
-            fontWeight={700}
-            sx={{ cursor: 'pointer', userSelect: 'none', letterSpacing: 0.3, flexGrow: 1 }}
-            onClick={() => navigate('/dashboard')}
-          >
-            {t('appName')}
+  // ── Topbar (desktop) ────────────────────────────────────────────────────────
+  const topbar = (
+    <Box sx={{
+      display: 'flex', alignItems: 'center', gap: '12px',
+      px: '28px', py: '14px',
+      bgcolor: tok.surface, borderBottom: `1px solid ${tok.hairline}`,
+      flexShrink: 0,
+    }}>
+      {/* Title */}
+      <Box sx={{ flex: 1 }}>
+        {subtitle && (
+          <Typography sx={{ fontSize: 11, color: tok.muted, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500 }}>
+            {subtitle}
           </Typography>
-
-          {/* Language toggle */}
-          <Box sx={{ display: 'flex', alignItems: 'center', mr: 0.5 }}>
-            {['en', 'bn'].map((lang, i) => (
-              <>
-                {i === 1 && (
-                  <Typography key="sep" variant="caption" sx={{ opacity: 0.35, color: 'white', mx: 0.25 }}>
-                    |
-                  </Typography>
-                )}
-                <Box
-                  key={lang}
-                  component="button"
-                  onClick={() => handleLangChange(lang)}
-                  sx={{
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    color: 'white', fontFamily: 'inherit',
-                    fontSize: lang === 'bn' ? '0.78rem' : '0.75rem',
-                    fontWeight: currentLang === lang ? 700 : 400,
-                    opacity: currentLang === lang ? 1 : 0.55,
-                    px: 0.5, py: 0.25, borderRadius: 0.5,
-                    '&:hover': { opacity: 1 },
-                  }}
-                >
-                  {t(`lang.${lang}`)}
-                </Box>
-              </>
-            ))}
-          </Box>
-
-          {/* Notification bell — non-chef */}
-          {role !== 'chef' && <NotificationBell />}
-
-          {/* User avatar → menu */}
-          <Tooltip title={user?.name ?? ''}>
-            <IconButton
-              onClick={(e) => setUserMenuAnchor(e.currentTarget)}
-              sx={{ ml: 0.25, p: 0.5 }}
-              aria-label="account menu"
-            >
-              <Avatar sx={{ width: 32, height: 32, fontSize: '0.75rem', bgcolor: AVATAR_BG[role] ?? '#1565c0' }}>
-                {getInitials(user?.name)}
-              </Avatar>
-            </IconButton>
-          </Tooltip>
-        </Toolbar>
-      </AppBar>
-
-      {/* ── Mobile drawer (temporary overlay) ──────────────────────────── */}
-      <Drawer
-        variant="temporary"
-        open={mobileOpen}
-        onClose={() => setMobileOpen(false)}
-        ModalProps={{ keepMounted: true }}
-        sx={{
-          display: { xs: 'block', md: 'none' },
-          '& .MuiDrawer-paper': { width: DRAWER_WIDTH, boxSizing: 'border-box' },
-        }}
-      >
-        <Toolbar />
-        {drawerBody}
-      </Drawer>
-
-      {/* ── Desktop drawer (permanent) ──────────────────────────────────── */}
-      <Drawer
-        variant="permanent"
-        sx={{
-          display: { xs: 'none', md: 'block' },
-          width: DRAWER_WIDTH,
-          flexShrink: 0,
-          '& .MuiDrawer-paper': {
-            width: DRAWER_WIDTH,
-            boxSizing: 'border-box',
-            borderRight: '1px solid',
-            borderColor: 'divider',
-            bgcolor: 'background.paper',
-          },
-        }}
-        open
-      >
-        <Toolbar />
-        {drawerBody}
-      </Drawer>
-
-      {/* ── Main content ────────────────────────────────────────────────── */}
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          minWidth: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          // Leave space below for bottom nav on mobile
-          pb: { xs: '56px', md: 0 },
-        }}
-      >
-        <Toolbar /> {/* spacer for fixed AppBar */}
-        {children}
+        )}
+        <Typography sx={{ fontSize: 18, fontWeight: 500, letterSpacing: '-0.01em', color: tok.ink }}>
+          {title || t('appName')}
+        </Typography>
       </Box>
 
-      {/* ── Bottom navigation (mobile only) ────────────────────────────── */}
-      <Paper
-        elevation={8}
+      {/* Search box (decorative) */}
+      <Box sx={{
+        display: 'flex', alignItems: 'center', gap: '8px',
+        px: '12px', py: '6px', borderRadius: '8px',
+        bgcolor: tok.bg, border: `1px solid ${tok.hairline}`,
+        color: tok.muted, fontSize: 13, width: 220, cursor: 'text',
+      }}>
+        <SearchIcon sx={{ fontSize: 14, flexShrink: 0 }} />
+        <Typography sx={{ fontSize: 13, color: tok.muted }}>
+          Search…
+        </Typography>
+      </Box>
+
+      {/* Lang toggle */}
+      <Box component="button"
+        onClick={() => handleLang(currentLang === 'en' ? 'bn' : 'en')}
         sx={{
-          display: { xs: 'block', md: 'none' },
-          position: 'fixed',
-          bottom: 0, left: 0, right: 0,
-          zIndex: (t) => t.zIndex.appBar,
+          px: '10px', py: '6px', borderRadius: '8px',
+          border: `1px solid ${tok.hairline}`, bgcolor: 'transparent',
+          color: tok.ink, fontSize: 12, fontWeight: 500,
+          cursor: 'pointer', fontFamily: 'inherit',
+          '&:hover': { bgcolor: tok.soft },
         }}
       >
-        <BottomNavigation
-          value={activeBottom}
-          onChange={handleBottomChange}
-          showLabels
-          sx={{ borderTop: '1px solid', borderColor: 'divider' }}
-        >
-          {bottomItems.map(({ key, path, Icon }) => (
-            <BottomNavigationAction
-              key={path}
-              label={t(key)}
-              value={path}
-              icon={<Icon fontSize="small" />}
-              sx={{
-                minWidth: 0,
-                px: 0.5,
-                '&.Mui-selected': { color: 'success.dark' },
-                '& .MuiBottomNavigationAction-label': { fontSize: '0.58rem' },
-                '& .MuiBottomNavigationAction-label.Mui-selected': { fontSize: '0.63rem' },
-              }}
-            />
-          ))}
-        </BottomNavigation>
-      </Paper>
+        {currentLang === 'en' ? 'EN · বাংলা' : 'বাংলা · EN'}
+      </Box>
 
-      {/* ── User avatar dropdown menu ───────────────────────────────────── */}
-      <Menu
-        anchorEl={userMenuAnchor}
-        open={Boolean(userMenuAnchor)}
-        onClose={() => setUserMenuAnchor(null)}
-        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-        slotProps={{ paper: { elevation: 3, sx: { minWidth: 180, mt: 0.5 } } }}
-      >
-        <Box sx={{ px: 2, py: 1.25 }}>
-          <Typography variant="body2" fontWeight={600}>{user?.name}</Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'capitalize' }}>
-            {role}
+      {/* Dark mode toggle */}
+      <Tooltip title={isDark ? 'Light mode' : 'Dark mode'}>
+        <IconButton
+          size="small"
+          onClick={toggleMode}
+          sx={{
+            width: 34, height: 34, borderRadius: '8px',
+            border: `1px solid ${tok.hairline}`, color: tok.ink,
+            '&:hover': { bgcolor: tok.soft },
+          }}
+        >
+          {isDark ? <LightModeIcon sx={{ fontSize: 15 }} /> : <DarkModeIcon sx={{ fontSize: 15 }} />}
+        </IconButton>
+      </Tooltip>
+
+      {/* Notification bell */}
+      <NotificationBell />
+
+      {/* Page action slot */}
+      {actions}
+    </Box>
+  );
+
+  // ── Mobile top bar ──────────────────────────────────────────────────────────
+  const mobileTopBar = (
+    <Box sx={{
+      display: 'flex', alignItems: 'center', gap: '10px',
+      px: '16px', pt: '12px', pb: '10px',
+      bgcolor: tok.bg, borderBottom: `1px solid ${tok.hairlineSoft}`,
+      flexShrink: 0,
+    }}>
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        {subtitle && (
+          <Typography sx={{ fontSize: 10, color: tok.muted, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500 }}>
+            {subtitle}
           </Typography>
-        </Box>
-        <Divider />
-        <MuiMenuItem
-          onClick={() => { setUserMenuAnchor(null); navigate('/profile'); }}
-          sx={{ gap: 1.5, py: 1 }}
-        >
-          <ProfileIcon fontSize="small" color="action" />
-          {t('nav.profile')}
-        </MuiMenuItem>
-        <Divider />
-        <MuiMenuItem
-          onClick={handleLogout}
-          sx={{ gap: 1.5, py: 1, color: 'error.main' }}
-        >
-          <LogoutIcon fontSize="small" color="error" />
-          {t('nav.logout')}
-        </MuiMenuItem>
-      </Menu>
+        )}
+        <Typography sx={{ fontSize: 18, fontWeight: 500, letterSpacing: '-0.01em', lineHeight: 1.2, color: tok.ink }} noWrap>
+          {title || t('appName')}
+        </Typography>
+      </Box>
+      {actions}
+      <NotificationBell />
+      <Avatar sx={{ width: 36, height: 36, bgcolor: '#7F9E6E', color: '#FAF8F3', fontSize: 13, fontWeight: 500, flexShrink: 0 }}>
+        {getInitials(userName)}
+      </Avatar>
+    </Box>
+  );
 
+  // ── Mobile bottom tabs ──────────────────────────────────────────────────────
+  const activeTabPath = (() => {
+    for (const tab of tabs) {
+      if (tab.path !== '__more__' && isActive(tab.path)) return tab.path;
+    }
+    return null;
+  })();
+
+  const mobileBottomTabs = (
+    <Box sx={{
+      display: 'flex', flexShrink: 0,
+      borderTop: `1px solid ${tok.hairlineSoft}`, bgcolor: tok.surface,
+      pt: '8px', pb: '14px',
+    }}>
+      {tabs.map(({ path, label, Icon }) => {
+        const active = path === '__more__' ? false : activeTabPath === path;
+        return (
+          <Box
+            key={path}
+            component="button"
+            onClick={() => path === '__more__' ? setMoreOpen(true) : navigate(path)}
+            sx={{
+              flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
+              py: '6px', border: 'none', bgcolor: 'transparent', cursor: 'pointer',
+              fontFamily: 'inherit', color: active ? tok.ink : tok.muted,
+            }}
+          >
+            <Icon sx={{ fontSize: 20 }} />
+            <Typography sx={{ fontSize: 10, fontWeight: active ? 500 : 400, letterSpacing: '0.02em' }}>
+              {label}
+            </Typography>
+          </Box>
+        );
+      })}
+    </Box>
+  );
+
+  // ── Mobile "More" drawer ────────────────────────────────────────────────────
+  const moreDrawer = (
+    <Drawer anchor="bottom" open={moreOpen} onClose={() => setMoreOpen(false)}
+      PaperProps={{ sx: { borderRadius: '16px 16px 0 0', bgcolor: tok.surface, maxHeight: '80vh' } }}
+    >
+      <Box sx={{ p: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+          <Typography sx={{ fontSize: 14, fontWeight: 500, color: tok.ink }}>Navigation</Typography>
+          <IconButton size="small" onClick={() => setMoreOpen(false)} sx={{ color: tok.muted }}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Box>
+        {navItems.map(({ path, label, Icon }) => (
+          <NavItem key={path} path={path} label={t(label)} Icon={Icon}
+            active={isActive(path)} tok={tok}
+            onClick={() => { navigate(path); setMoreOpen(false); }}
+          />
+        ))}
+        <Box sx={{ mt: 2, pt: 2, borderTop: `1px solid ${tok.hairlineSoft}` }}>
+          <Box component="button" onClick={toggleMode}
+            sx={{
+              display: 'flex', alignItems: 'center', gap: '10px',
+              width: '100%', px: '10px', py: '8px', borderRadius: '8px',
+              border: 'none', bgcolor: 'transparent', cursor: 'pointer', fontFamily: 'inherit',
+              color: tok.muted, fontSize: 13, '&:hover': { bgcolor: tok.soft },
+            }}
+          >
+            {isDark ? <LightModeIcon sx={{ fontSize: 17 }} /> : <DarkModeIcon sx={{ fontSize: 17 }} />}
+            <span>{isDark ? 'Light mode' : 'Dark mode'}</span>
+          </Box>
+          <Box component="button" onClick={handleLogout}
+            sx={{
+              display: 'flex', alignItems: 'center', gap: '10px',
+              width: '100%', px: '10px', py: '8px', borderRadius: '8px',
+              border: 'none', bgcolor: 'transparent', cursor: 'pointer', fontFamily: 'inherit',
+              color: tok.dangerInk, fontSize: 13, '&:hover': { bgcolor: tok.dangerBg },
+            }}
+          >
+            <LogoutIcon sx={{ fontSize: 17 }} />
+            <span>{t('nav.logout')}</span>
+          </Box>
+        </Box>
+      </Box>
+    </Drawer>
+  );
+
+  // ── Render ──────────────────────────────────────────────────────────────────
+
+  if (isMobile) {
+    return (
+      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', bgcolor: tok.bg }}>
+        {mobileTopBar}
+        <Box component="main" sx={{ flex: 1, overflowY: 'auto' }}>
+          {children}
+        </Box>
+        {mobileBottomTabs}
+        {moreDrawer}
+      </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ display: 'grid', gridTemplateColumns: '240px 1fr', height: '100dvh', overflow: 'hidden' }}>
+      {sidebarContent}
+      <Box sx={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', bgcolor: tok.bg }}>
+        {topbar}
+        <Box component="main" sx={{ flex: 1, overflowY: 'auto', bgcolor: tok.bg }}>
+          {children}
+        </Box>
+      </Box>
     </Box>
   );
 }

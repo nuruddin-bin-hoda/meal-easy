@@ -2,7 +2,13 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { CssBaseline } from '@mui/material';
+import { ThemeProvider } from '@mui/material/styles';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeContextProvider, useColorMode } from './context/ThemeContext';
+import { TopbarProvider } from './context/TopbarContext';
+import { lightTheme, darkTheme } from './theme';
 import './i18n/index.js';
 import App from './App.jsx';
 
@@ -12,13 +18,28 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+function AppWithTheme() {
+  const { mode } = useColorMode();
+  return (
+    <ThemeProvider theme={mode === 'dark' ? darkTheme : lightTheme}>
+      <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <AuthProvider>
+          <TopbarProvider>
+            <CssBaseline />
+            <App />
+          </TopbarProvider>
+        </AuthProvider>
+      </LocalizationProvider>
+    </ThemeProvider>
+  );
+}
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
-      <AuthProvider>
-        <CssBaseline />
-        <App />
-      </AuthProvider>
+      <ThemeContextProvider>
+        <AppWithTheme />
+      </ThemeContextProvider>
     </BrowserRouter>
   </StrictMode>,
 );

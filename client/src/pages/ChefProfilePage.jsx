@@ -1,16 +1,20 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
+import dayjs from 'dayjs';
 import {
   Alert, Box, Button, Card, CardContent, CardHeader, Chip, CircularProgress,
   Container, Dialog, DialogActions, DialogContent, DialogTitle, Divider,
   MenuItem, Snackbar, Stack, Table, TableBody, TableCell, TableHead,
-  TableRow, TextField, Typography,
+  TableRow, TextField, Typography, useTheme,
 } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { getBadge } from '../utils/badgeStyles';
+import { useTopbar } from '../context/TopbarContext';
 
 const currentMonth = () => format(new Date(), 'yyyy-MM');
 const today = () => format(new Date(), 'yyyy-MM-dd');
@@ -20,6 +24,14 @@ export default function ChefProfilePage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const theme = useTheme();
+  const mode = theme.palette.mode;
+  const { setTopbar } = useTopbar();
+
+  useEffect(() => {
+    setTopbar({ title: t('nav.chefs') });
+    return () => setTopbar({ title: '', subtitle: '', actions: null });
+  }, [t, setTopbar]);
 
   const [chef, setChef] = useState(null);
   const [salaries, setSalaries] = useState([]);
@@ -169,7 +181,7 @@ export default function ChefProfilePage() {
       </Button>
 
       {/* Chef details */}
-      <Card elevation={2} sx={{ mb: 3 }}>
+      <Card elevation={0} sx={{ mb: 3 }}>
         <CardHeader
           title={chef.name}
           subheader={`@${chef.loginUsername}`}
@@ -177,8 +189,8 @@ export default function ChefProfilePage() {
             <Stack direction="row" spacing={1} alignItems="center">
               <Chip
                 label={chef.isActive ? t('common.active') : t('common.inactive')}
-                color={chef.isActive ? 'success' : 'default'}
                 size="small"
+                sx={getBadge(chef.isActive ? 'success' : 'warning', mode)}
               />
               <Button variant="outlined" size="small" onClick={openEdit}>
                 {t('chefs.editProfile')}
@@ -210,7 +222,7 @@ export default function ChefProfilePage() {
       </Card>
 
       {/* Salary history */}
-      <Card elevation={2} sx={{ mb: 3 }}>
+      <Card elevation={0} sx={{ mb: 3 }}>
         <CardHeader
           title={t('chefs.salaryHistory')}
           titleTypographyProps={{ variant: 'h6' }}
@@ -226,7 +238,7 @@ export default function ChefProfilePage() {
         <Divider />
         <Table size="small">
           <TableHead>
-            <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: 'action.hover' } }}>
+            <TableRow>
               <TableCell>{t('common.month')}</TableCell>
               <TableCell align="right">{t('common.amount')}</TableCell>
               <TableCell align="center">{t('common.status')}</TableCell>
@@ -247,8 +259,8 @@ export default function ChefProfilePage() {
                 <TableCell align="center">
                   <Chip
                     label={s.paidStatus === 'paid' ? t('common.paid') : t('common.unpaid')}
-                    color={s.paidStatus === 'paid' ? 'success' : 'warning'}
                     size="small"
+                    sx={getBadge(s.paidStatus === 'paid' ? 'success' : 'warning', mode)}
                   />
                 </TableCell>
                 <TableCell>
@@ -261,7 +273,7 @@ export default function ChefProfilePage() {
       </Card>
 
       {/* Bonus history */}
-      <Card elevation={2}>
+      <Card elevation={0}>
         <CardHeader
           title={t('chefs.bonusHistory')}
           titleTypographyProps={{ variant: 'h6' }}
@@ -277,7 +289,7 @@ export default function ChefProfilePage() {
         <Divider />
         <Table size="small">
           <TableHead>
-            <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: 'action.hover' } }}>
+            <TableRow>
               <TableCell>{t('common.date')}</TableCell>
               <TableCell align="right">{t('common.amount')}</TableCell>
               <TableCell>{t('common.reason')}</TableCell>
@@ -320,10 +332,11 @@ export default function ChefProfilePage() {
                 />
               </Stack>
               <Stack direction="row" spacing={2}>
-                <TextField
-                  label={t('chefs.joinDate')} type="date" value={editForm.joinDate ?? ''}
-                  onChange={e => setEditForm(f => ({ ...f, joinDate: e.target.value }))}
-                  slotProps={{ inputLabel: { shrink: true } }} sx={{ flex: 1 }}
+                <DatePicker
+                  label={t('chefs.joinDate')}
+                  value={editForm.joinDate ? dayjs(editForm.joinDate) : null}
+                  onChange={(newVal) => setEditForm(f => ({ ...f, joinDate: newVal ? newVal.format('YYYY-MM-DD') : '' }))}
+                  slotProps={{ textField: { size: 'small', sx: { flex: 1 } } }}
                 />
                 <TextField
                   label={t('chefs.salaryAmount')} value={editForm.salaryAmount ?? ''} type="number"
@@ -357,10 +370,13 @@ export default function ChefProfilePage() {
         <Box component="form" onSubmit={handleSalarySubmit}>
           <DialogContent>
             <Stack spacing={2} sx={{ mt: 0.5 }}>
-              <TextField
-                label={t('chefs.billingMonth')} value={salaryForm.billingMonth} required
-                onChange={e => setSalaryForm(f => ({ ...f, billingMonth: e.target.value }))}
-                placeholder="YYYY-MM" slotProps={{ inputLabel: { shrink: true } }} fullWidth
+              <DatePicker
+                label={t('chefs.billingMonth')}
+                views={['year', 'month']}
+                openTo="month"
+                value={salaryForm.billingMonth ? dayjs(salaryForm.billingMonth + '-01') : null}
+                onChange={(newVal) => setSalaryForm(f => ({ ...f, billingMonth: newVal ? newVal.format('YYYY-MM') : '' }))}
+                slotProps={{ textField: { size: 'small', required: true, fullWidth: true } }}
               />
               <TextField
                 label={t('common.amount')} value={salaryForm.salaryAmount} type="number" required
@@ -399,10 +415,11 @@ export default function ChefProfilePage() {
                 onChange={e => setBonusForm(f => ({ ...f, amount: e.target.value }))}
                 fullWidth
               />
-              <TextField
-                label={t('common.date')} type="date" value={bonusForm.date} required
-                onChange={e => setBonusForm(f => ({ ...f, date: e.target.value }))}
-                slotProps={{ inputLabel: { shrink: true } }} fullWidth
+              <DatePicker
+                label={t('common.date')}
+                value={bonusForm.date ? dayjs(bonusForm.date) : null}
+                onChange={(newVal) => setBonusForm(f => ({ ...f, date: newVal ? newVal.format('YYYY-MM-DD') : '' }))}
+                slotProps={{ textField: { size: 'small', required: true, fullWidth: true } }}
               />
               <TextField
                 label={t('common.reason')} value={bonusForm.reason} required multiline rows={2}

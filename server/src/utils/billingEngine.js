@@ -55,4 +55,33 @@ const calculateBilling = async (billingMonth) => {
   };
 };
 
-module.exports = { calculateBilling };
+/**
+ * Project the end-of-month meal rate by extrapolating today's spend and meal
+ * pace to the full billing cycle. Unlike `mealRate` (purchase-cost only),
+ * `projectedFinalRate` folds in other costs so it represents the true per-meal
+ * cost a member will see on their final bill.
+ *
+ * Formula:
+ *   projectedFinalRate = (totalItemCost + totalOtherCost) / totalMealCount
+ *
+ * This differs from `mealRate` which only divides purchase cost by meals.
+ * Both numerator terms scale proportionally with time, so the ratio equals
+ * the current all-in cost-per-meal — a stable leading indicator of the final bill.
+ */
+const projectRate = async (billingMonth) => {
+  const result = await calculateBilling(billingMonth);
+
+  const [year, month] = billingMonth.split('-').map(Number);
+  const cycleDay = new Date().getDate();
+  // days in month: day-0 of next month = last day of this month
+  const cycleTotal = new Date(year, month, 0).getDate();
+
+  const projectedFinalRate =
+    result.totalMealCount > 0
+      ? (result.totalItemCost + result.totalOtherCost) / result.totalMealCount
+      : 0;
+
+  return { projectedFinalRate, cycleDay, cycleTotal };
+};
+
+module.exports = { calculateBilling, projectRate };

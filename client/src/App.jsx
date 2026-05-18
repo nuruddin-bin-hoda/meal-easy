@@ -33,7 +33,7 @@ export default function App() {
     const isBn = (i18n.language || 'en').startsWith('bn');
     document.body.style.fontFamily = isBn
       ? "'Hind Siliguri', sans-serif"
-      : "'Roboto', sans-serif";
+      : "'Inter', 'Roboto', sans-serif";
   }, [i18n.language]);
 
   return (

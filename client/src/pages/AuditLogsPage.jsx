@@ -1,16 +1,20 @@
 import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
+import dayjs from 'dayjs';
 import {
   Alert, Box, Button, Card, CardContent, Chip, CircularProgress,
   Container, Dialog, DialogContent, DialogTitle, Divider, IconButton,
-  MenuItem, Stack, TextField, Typography,
+  MenuItem, Stack, TextField, Typography, useTheme,
 } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers';
 import CloseIcon from '@mui/icons-material/Close';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import { DataGrid } from '@mui/x-data-grid';
 import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { getBadge } from '../utils/badgeStyles';
+import { useTopbar } from '../context/TopbarContext';
 
 const ADMIN_ROLES = ['admin', 'superadmin'];
 
@@ -32,11 +36,11 @@ const ACTION_VALUES = [
   { value: 'BONUS_RECORDED', key: 'audit.bonusRecorded' },
 ];
 
-const ROLE_COLORS = {
+const ROLE_BADGE_TYPE = {
   superadmin: 'error',
   admin: 'warning',
-  user: 'default',
-  chef: 'secondary',
+  user: 'info',
+  chef: 'success',
 };
 
 function JsonBlock({ label, value }) {
@@ -64,7 +68,15 @@ const EMPTY_FILTERS = { startDate: '', endDate: '', action: '', actorId: '' };
 export default function AuditLogsPage() {
   const { user } = useAuth();
   const { t } = useTranslation();
+  const theme = useTheme();
+  const mode = theme.palette.mode;
+  const { setTopbar } = useTopbar();
   const isAdmin = ADMIN_ROLES.includes(user?.role);
+
+  useEffect(() => {
+    setTopbar({ title: t('nav.auditLogs') });
+    return () => setTopbar({ title: '', subtitle: '', actions: null });
+  }, [t, setTopbar]);
 
   const [filterForm, setFilterForm] = useState(EMPTY_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
@@ -154,9 +166,8 @@ export default function AuditLogsPage() {
       renderCell: ({ value }) => (
         <Chip
           label={value ?? '—'}
-          color={ROLE_COLORS[value] ?? 'default'}
           size="small"
-          variant="outlined"
+          sx={getBadge(ROLE_BADGE_TYPE[value] ?? 'info', mode)}
         />
       ),
     },
@@ -181,20 +192,20 @@ export default function AuditLogsPage() {
         {t('audit.title')}
       </Typography>
 
-      <Card elevation={1} sx={{ mb: 2 }}>
+      <Card elevation={0} sx={{ mb: 2 }}>
         <CardContent sx={{ py: '12px !important' }}>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center" flexWrap="wrap">
-            <TextField
-              label={t('common.from')} type="date" value={filterForm.startDate} size="small"
-              onChange={setField('startDate')}
-              slotProps={{ inputLabel: { shrink: true } }}
-              sx={{ minWidth: 150 }}
+            <DatePicker
+              label={t('common.from')}
+              value={filterForm.startDate ? dayjs(filterForm.startDate) : null}
+              onChange={(newVal) => setFilterForm(f => ({ ...f, startDate: newVal ? newVal.format('YYYY-MM-DD') : '' }))}
+              slotProps={{ textField: { size: 'small', sx: { minWidth: 150 } } }}
             />
-            <TextField
-              label={t('common.to')} type="date" value={filterForm.endDate} size="small"
-              onChange={setField('endDate')}
-              slotProps={{ inputLabel: { shrink: true } }}
-              sx={{ minWidth: 150 }}
+            <DatePicker
+              label={t('common.to')}
+              value={filterForm.endDate ? dayjs(filterForm.endDate) : null}
+              onChange={(newVal) => setFilterForm(f => ({ ...f, endDate: newVal ? newVal.format('YYYY-MM-DD') : '' }))}
+              slotProps={{ textField: { size: 'small', sx: { minWidth: 150 } } }}
             />
             <TextField
               select label={t('audit.action')} value={filterForm.action} size="small"
@@ -267,12 +278,7 @@ export default function AuditLogsPage() {
       </Box>
 
       {/* Detail dialog */}
-      <Dialog
-        open={!!detailRow}
-        onClose={() => setDetailRow(null)}
-        maxWidth="sm"
-        fullWidth
-      >
+      <Dialog open={!!detailRow} onClose={() => setDetailRow(null)} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ pr: 6 }}>
           {t('audit.logDetail')}
           <IconButton
@@ -300,10 +306,8 @@ export default function AuditLogsPage() {
                     {detailRow.actorName}
                     <Chip
                       label={detailRow.actorRole}
-                      color={ROLE_COLORS[detailRow.actorRole] ?? 'default'}
                       size="small"
-                      variant="outlined"
-                      sx={{ ml: 0.75 }}
+                      sx={{ ...getBadge(ROLE_BADGE_TYPE[detailRow.actorRole] ?? 'info', mode), ml: 0.75 }}
                     />
                   </Typography>
                 </Box>

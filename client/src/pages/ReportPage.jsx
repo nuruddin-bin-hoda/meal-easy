@@ -4,27 +4,29 @@ import { format } from 'date-fns';
 import {
   Alert, Box, Button, Card, CardContent, CircularProgress, Container,
   Divider, Grid, MenuItem, Stack, Table, TableBody, TableCell,
-  TableHead, TableRow, TextField, Typography,
+  TableHead, TableRow, TextField, Typography, useTheme,
 } from '@mui/material';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { useTopbar } from '../context/TopbarContext';
 
 const ADMIN_ROLES = ['admin', 'superadmin'];
 
-function SummaryCard({ label, value, color }) {
+function SummaryCard({ label, value, color, sub, tok }) {
   return (
-    <Card elevation={2} sx={{ height: '100%' }}>
-      <CardContent sx={{ textAlign: 'center' }}>
-        <Typography variant="body2" color="text.secondary" gutterBottom>
-          {label}
-        </Typography>
-        <Typography variant="h5" fontWeight={700} sx={{ color: color ?? 'inherit' }}>
-          {value}
-        </Typography>
-      </CardContent>
-    </Card>
+    <Box sx={{ bgcolor: tok.surface, border: `1px solid ${tok.hairline}`, borderRadius: '12px', p: '20px 22px' }}>
+      <Typography sx={{ fontSize: 11, color: tok.muted, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500, mb: '4px' }}>
+        {label}
+      </Typography>
+      <Typography sx={{ fontSize: 24, fontWeight: 500, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: color ?? tok.ink }}>
+        {value}
+      </Typography>
+      {sub && <Typography sx={{ fontSize: 11, color: tok.muted, mt: '1px' }}>{sub}</Typography>}
+    </Box>
   );
 }
 
@@ -33,6 +35,9 @@ export default function ReportPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t } = useTranslation();
+  const theme = useTheme();
+  const tok = theme.tokens;
+  const { setTopbar } = useTopbar();
 
   const isAdmin = ADMIN_ROLES.includes(user?.role);
 
@@ -62,8 +67,38 @@ export default function ReportPage() {
       .finally(() => setLoading(false));
   }, [userId, month, t]);
 
+  const pdfHref = userId && month
+    ? `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/reports/${userId}/${month}/pdf`
+    : null;
+
+  useEffect(() => {
+    setTopbar({
+      title: t('report.title'),
+      subtitle: month ? format(new Date(`${month}-01`), 'MMMM yyyy') : '',
+      actions: pdfHref ? (
+        <Button variant="outlined" size="small" startIcon={<PictureAsPdfIcon />}
+          component="a" href={pdfHref} target="_blank" rel="noopener noreferrer"
+          sx={{ fontSize: 12 }}>
+          {t('report.downloadPdf')}
+        </Button>
+      ) : null,
+    });
+    return () => setTopbar({ title: '', subtitle: '', actions: null });
+  }, [t, setTopbar, month, pdfHref]);
+
   const handleMonthChange = (e) => {
     navigate(`/reports/${e.target.value}`, { replace: true });
+  };
+
+  const prevMonth = () => {
+    if (!month) return;
+    const d = new Date(`${month}-01`); d.setMonth(d.getMonth() - 1);
+    navigate(`/reports/${d.toISOString().slice(0, 7)}`, { replace: true });
+  };
+  const nextMonth = () => {
+    if (!month) return;
+    const d = new Date(`${month}-01`); d.setMonth(d.getMonth() + 1);
+    navigate(`/reports/${d.toISOString().slice(0, 7)}`, { replace: true });
   };
 
   const mealTypes = useMemo(() => {
@@ -87,57 +122,43 @@ export default function ReportPage() {
     ? Object.values(data.totalMealsByType ?? {}).reduce((s, n) => s + n, 0)
     : 0;
 
-  const pdfHref = userId && month
-    ? `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/reports/${userId}/${month}/pdf`
-    : null;
-
+  const pad = { xs: '16px', md: '28px' };
   return (
-    <Container maxWidth="lg" sx={{ py: 3 }}>
-      <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        spacing={2}
-        alignItems={{ sm: 'center' }}
-        justifyContent="space-between"
-        sx={{ mb: 3 }}
-      >
-        <Typography variant="h5" fontWeight={700}>
-          {t('report.title')}
-        </Typography>
+    <Box sx={{ p: pad, fontFeatureSettings: '"tnum","cv11"' }}>
+      {/* Month picker row */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: '16px', gap: '10px' }}>
+        <Box
+          component="button" onClick={prevMonth}
+          sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: tok.surface, border: `1px solid ${tok.hairline}`, color: tok.ink, cursor: 'pointer', display: 'grid', placeItems: 'center', '&:hover': { bgcolor: tok.soft } }}
+        >
+          <ChevronLeftIcon sx={{ fontSize: 14 }} />
+        </Box>
+        <Box sx={{ flex: 1, textAlign: 'center' }}>
+          <Typography sx={{ fontSize: 11, color: tok.muted, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500 }}>{t('report.billingMonth')}</Typography>
+          <Typography sx={{ fontSize: 18, fontWeight: 500, letterSpacing: '-0.01em', mt: '2px', color: tok.ink }}>
+            {month ? format(new Date(`${month}-01`), 'MMMM yyyy') : '—'}
+          </Typography>
+        </Box>
+        <Box
+          component="button" onClick={nextMonth}
+          sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: tok.surface, border: `1px solid ${tok.hairline}`, color: tok.ink, cursor: 'pointer', display: 'grid', placeItems: 'center', '&:hover': { bgcolor: tok.soft } }}
+        >
+          <ChevronRightIcon sx={{ fontSize: 14 }} />
+        </Box>
+      </Box>
 
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
-          {isAdmin && (
-            <TextField
-              select label={t('common.user')} value={selectedUserId} size="small" sx={{ minWidth: 200 }}
-              onChange={(e) => setSelectedUserId(e.target.value)}
-              slotProps={{ inputLabel: { shrink: true } }}
-            >
-              <MenuItem value="">{t('report.selectUser')}</MenuItem>
-              {users.map((u) => (
-                <MenuItem key={u._id} value={u._id}>{u.name}</MenuItem>
-              ))}
-            </TextField>
-          )}
-
-          <TextField
-            label={t('common.month')} type="month" value={month ?? ''} size="small"
-            onChange={handleMonthChange}
-            slotProps={{ inputLabel: { shrink: true } }}
-          />
-
-          <Button
-            variant="outlined"
-            startIcon={<PictureAsPdfIcon />}
-            size="small"
-            disabled={!pdfHref}
-            component={pdfHref ? 'a' : 'button'}
-            href={pdfHref ?? undefined}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {t('report.downloadPdf')}
-          </Button>
-        </Stack>
-      </Stack>
+      {isAdmin && (
+        <TextField
+          select label={t('common.user')} value={selectedUserId} size="small" sx={{ minWidth: 200, mb: 2 }}
+          onChange={(e) => setSelectedUserId(e.target.value)}
+          slotProps={{ inputLabel: { shrink: true } }}
+        >
+          <MenuItem value="">{t('report.selectUser')}</MenuItem>
+          {users.map((u) => (
+            <MenuItem key={u._id} value={u._id}>{u.name}</MenuItem>
+          ))}
+        </TextField>
+      )}
 
       {isAdmin && !selectedUserId && (
         <Alert severity="info">{t('report.selectUserPrompt')}</Alert>
@@ -179,27 +200,17 @@ export default function ReportPage() {
             </CardContent>
           </Card>
 
-          <Grid container spacing={2} sx={{ mb: 3 }}>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <SummaryCard
-                label={t('report.mealRate')}
-                value={`৳${(data.mealRate ?? 0).toFixed(2)}${t('common.perMealUnit')}`}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <SummaryCard label={t('report.totalMeals')} value={totalMeals} />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <SummaryCard label={t('report.totalBill')} value={`৳${(data.totalBill ?? 0).toFixed(2)}`} />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <SummaryCard
-                label={t('report.closingBalance')}
-                value={`৳${(data.closingBalance ?? 0).toFixed(2)}`}
-                color={data.closingBalance >= 0 ? 'success.main' : 'error.main'}
-              />
-            </Grid>
-          </Grid>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: '12px', mb: '16px' }}>
+            <SummaryCard label={t('report.mealRate')} value={`৳${(data.mealRate ?? 0).toFixed(2)}`} tok={tok} />
+            <SummaryCard label={t('report.totalMeals')} value={totalMeals} sub={`incl. ${(data?.guestMealCount ?? 0)} guest`} tok={tok} />
+            <SummaryCard label={t('report.totalBill')} value={`৳${(data.totalBill ?? 0).toFixed(2)}`} tok={tok} />
+            <SummaryCard
+              label={t('report.closingBalance')}
+              value={`৳${(data.closingBalance ?? 0).toFixed(2)}`}
+              color={data.closingBalance >= 0 ? tok.posInk : tok.dangerInk}
+              tok={tok}
+            />
+          </Box>
 
           {/* Meal attendance table */}
           <Card elevation={2} sx={{ mb: 3 }}>
@@ -362,6 +373,6 @@ export default function ReportPage() {
           </Card>
         </>
       )}
-    </Container>
+    </Box>
   );
 }

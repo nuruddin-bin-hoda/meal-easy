@@ -1,10 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
+import dayjs from 'dayjs';
 import {
   Alert, Box, Button, Card, CardActions, CardContent, CardHeader,
   Chip, CircularProgress, Container, Snackbar, Stack, TextField, Typography,
 } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers';
 import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
+import { useTopbar } from '../context/TopbarContext';
 
 function getLocalDateString() {
   const today = new Date();
@@ -53,7 +56,13 @@ function ChipInput({ mealType, items, inputValue, onAdd, onDelete, onInputChange
 
 export default function SetMenuPage() {
   const { t } = useTranslation();
+  const { setTopbar } = useTopbar();
   const [date, setDate] = useState(getLocalDateString);
+
+  useEffect(() => {
+    setTopbar({ title: t('nav.setMenu'), subtitle: 'Admin' });
+    return () => setTopbar({ title: '', subtitle: '', actions: null });
+  }, [t, setTopbar]);
   const [mealTypes, setMealTypes] = useState([]);
   const [mealTypeCutoffs, setMealTypeCutoffs] = useState({});
   const [items, setItems] = useState({});
@@ -145,14 +154,11 @@ export default function SetMenuPage() {
         {t('menu.setMenu')}
       </Typography>
 
-      <TextField
-        type="date"
+      <DatePicker
         label={t('menu.date')}
-        value={date}
-        onChange={e => setDate(e.target.value)}
-        fullWidth
-        sx={{ mb: 3 }}
-        slotProps={{ inputLabel: { shrink: true } }}
+        value={date ? dayjs(date) : null}
+        onChange={(newVal) => setDate(newVal ? newVal.format('YYYY-MM-DD') : '')}
+        slotProps={{ textField: { size: 'small', fullWidth: true, sx: { mb: 3 } } }}
       />
 
       {mealTypes.length === 0 && (

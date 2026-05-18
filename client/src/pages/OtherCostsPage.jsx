@@ -1,15 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
+import dayjs from 'dayjs';
 import {
   Alert, Box, Button, Card, CardContent, CardHeader, Chip, CircularProgress,
   Container, IconButton, Snackbar, Stack, Table, TableBody, TableCell,
-  TableHead, TableRow, TextField, Typography,
+  TableHead, TableRow, TextField, Typography, useTheme,
 } from '@mui/material';
+import { getBadge } from '../utils/badgeStyles';
+import { DatePicker } from '@mui/x-date-pickers';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { useTopbar } from '../context/TopbarContext';
 
 const currentMonth = () => format(new Date(), 'yyyy-MM');
 const EMPTY_FORM = { billingMonth: currentMonth(), description: '', amount: '' };
@@ -18,6 +22,14 @@ export default function OtherCostsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const theme = useTheme();
+  const mode = theme.palette.mode;
+  const { setTopbar } = useTopbar();
+
+  useEffect(() => {
+    setTopbar({ title: t('nav.costs'), subtitle: 'Admin' });
+    return () => setTopbar({ title: '', subtitle: '', actions: null });
+  }, [t, setTopbar]);
 
   const [form, setForm] = useState(EMPTY_FORM);
   const [viewMonth, setViewMonth] = useState(currentMonth());
@@ -103,10 +115,13 @@ export default function OtherCostsPage() {
           <Box component="form" onSubmit={handleSubmit}>
             <Stack spacing={2}>
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                <TextField
-                  label={t('costs.billingMonth')} value={form.billingMonth} required
-                  onChange={handleField('billingMonth')} placeholder="YYYY-MM"
-                  slotProps={{ inputLabel: { shrink: true } }} sx={{ width: 160 }}
+                <DatePicker
+                  label={t('costs.billingMonth')}
+                  views={['year', 'month']}
+                  openTo="month"
+                  value={form.billingMonth ? dayjs(form.billingMonth + '-01') : null}
+                  onChange={(newVal) => setForm(f => ({ ...f, billingMonth: newVal ? newVal.format('YYYY-MM') : '' }))}
+                  slotProps={{ textField: { size: 'small', required: true, sx: { width: 160 } } }}
                 />
                 <TextField
                   label={t('costs.description')} value={form.description} required
@@ -129,13 +144,15 @@ export default function OtherCostsPage() {
       </Card>
 
       <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
-        <TextField
-          label={t('costs.viewMonth')} value={viewMonth} size="small"
-          onChange={e => setViewMonth(e.target.value)}
-          placeholder="YYYY-MM" slotProps={{ inputLabel: { shrink: true } }}
-          sx={{ width: 160 }}
+        <DatePicker
+          label={t('costs.viewMonth')}
+          views={['year', 'month']}
+          openTo="month"
+          value={viewMonth ? dayjs(viewMonth + '-01') : null}
+          onChange={(newVal) => setViewMonth(newVal ? newVal.format('YYYY-MM') : '')}
+          slotProps={{ textField: { size: 'small', sx: { width: 160 } } }}
         />
-        {isLocked && <Chip label={t('costs.billingLocked')} color="warning" size="small" />}
+        {isLocked && <Chip label={t('costs.billingLocked')} size="small" sx={getBadge('warning', mode)} />}
       </Stack>
 
       {loading ? (

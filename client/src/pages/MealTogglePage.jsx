@@ -1,248 +1,289 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  Alert, Box, Card, CardContent, Chip, CircularProgress,
-  Container, Divider, IconButton, Snackbar, Stack, Switch, Typography,
+  Alert, Box, CircularProgress, Typography, useTheme,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import RemoveIcon from '@mui/icons-material/Remove';
+import CheckIcon from '@mui/icons-material/Check';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import { useTranslation, Trans } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { useTopbar } from '../context/TopbarContext';
 
-function formatDate(dateStr) {
-  if (!dateStr) return '';
-  return new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, {
-    weekday: 'long', month: 'long', day: 'numeric',
-  });
+const fmt = (n) => `৳${Number(n ?? 0).toFixed(2)}`;
+const ROMAN = ['I', 'II', 'III', 'IV', 'V'];
+
+function MealToggle({ on, disabled, onChange }) {
+  const theme = useTheme();
+  const tok = theme.tokens;
+  return (
+    <Box
+      component="button"
+      onClick={() => !disabled && onChange(!on)}
+      sx={{
+        width: 40, height: 22, borderRadius: '999px',
+        bgcolor: on ? tok.ink : tok.soft,
+        border: 'none', cursor: disabled ? 'default' : 'pointer',
+        position: 'relative', p: 0, flexShrink: 0,
+        opacity: disabled ? 0.4 : 1, transition: 'background 0.15s',
+        '&:focus-visible': { outline: `2px solid ${tok.brandSage}` },
+      }}
+    >
+      <Box sx={{
+        position: 'absolute', top: '50%', left: '2px',
+        width: 18, height: 18, borderRadius: '999px',
+        bgcolor: on ? tok.bg : tok.surface,
+        transform: `translate(${on ? 18 : 0}px, -50%)`,
+        transition: 'transform 0.15s',
+      }} />
+    </Box>
+  );
 }
 
-function MealCard({ toggle, menuItems, mealBlocked, saving, onToggle, onGuestStep, guestMealsLabel, cutoffLabel }) {
-  const { t } = useTranslation();
-  const disabled = toggle.isCutoffPassed || mealBlocked;
-
+function GuestStepper({ value, disabled, onStep, tok }) {
   return (
-    <Card elevation={2} sx={{ opacity: toggle.isCutoffPassed ? 0.8 : 1 }}>
-      <CardContent sx={{ pb: '16px !important' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 48 }}>
-          <Box>
-            <Typography variant="h6" fontWeight={600}>
-              {toggle.mealType}
-            </Typography>
-            {toggle.cutoffTime && (
-              <Typography
-                variant="caption"
-                color={toggle.isCutoffPassed ? 'error.main' : 'text.secondary'}
-                sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
-              >
-                {toggle.isCutoffPassed && <LockOutlinedIcon sx={{ fontSize: 12 }} />}
-                {t('meal.cutoffAt', { time: toggle.cutoffTime })}
-              </Typography>
-            )}
-          </Box>
-          {toggle.isCutoffPassed ? (
-            <LockOutlinedIcon color="disabled" />
-          ) : saving ? (
-            <CircularProgress size={24} sx={{ mr: 1 }} />
-          ) : (
-            <Switch
-              checked={toggle.isOn}
-              onChange={e => onToggle(toggle.mealType, e.target.checked)}
-              disabled={disabled}
-              color="primary"
-              inputProps={{ 'aria-label': `Toggle ${toggle.mealType}` }}
-            />
-          )}
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+      {[-1, +1].map((delta) => (
+        <Box
+          key={delta}
+          component="button"
+          onClick={() => onStep(delta)}
+          disabled={disabled || (delta < 0 && value === 0)}
+          sx={{
+            width: 24, height: 24, borderRadius: '6px',
+            bgcolor: tok.soft, color: tok.muted,
+            border: `1px solid ${tok.hairline}`,
+            fontSize: 16, fontFamily: 'inherit', cursor: 'pointer', p: 0, lineHeight: 1,
+            '&:disabled': { opacity: 0.4, cursor: 'default' },
+            display: 'grid', placeItems: 'center',
+          }}
+        >
+          {delta < 0 ? '−' : '+'}
         </Box>
-
-        {menuItems.length > 0 && (
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 0.5 }}>
-            {menuItems.map(item => (
-              <Chip key={item} label={item} size="small" variant="outlined" />
-            ))}
-          </Box>
-        )}
-
-        {toggle.isOn && !toggle.isCutoffPassed && (
-          <>
-            <Divider sx={{ my: 1.5 }} />
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Typography variant="body2" color="text.secondary">
-                {guestMealsLabel}
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 'auto' }}>
-                <IconButton
-                  size="small"
-                  onClick={() => onGuestStep(toggle.mealType, -1)}
-                  disabled={disabled || toggle.guestCount === 0}
-                  sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: '6px' }}
-                  aria-label="Decrease guest count"
-                >
-                  <RemoveIcon fontSize="small" />
-                </IconButton>
-                <Typography sx={{ minWidth: 32, textAlign: 'center', fontWeight: 700, fontSize: '1.1rem' }}>
-                  {toggle.guestCount}
-                </Typography>
-                <IconButton
-                  size="small"
-                  onClick={() => onGuestStep(toggle.mealType, 1)}
-                  disabled={disabled}
-                  sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: '6px' }}
-                  aria-label="Increase guest count"
-                >
-                  <AddIcon fontSize="small" />
-                </IconButton>
-              </Box>
-            </Box>
-          </>
-        )}
-      </CardContent>
-    </Card>
+      )).reduce((acc, el, i) => {
+        if (i === 0) return [el,
+          <Box key="val" sx={{
+            minWidth: 30, textAlign: 'center', fontSize: 12, fontWeight: 500,
+            fontVariantNumeric: 'tabular-nums', color: tok.ink,
+          }}>
+            <Box component="span" sx={{ fontSize: 10, color: tok.muted, mr: '3px' }}>+</Box>
+            {value}
+          </Box>,
+          el,
+        ];
+        return acc;
+      })}
+    </Box>
   );
 }
 
 export default function MealTogglePage() {
   const { user } = useAuth();
   const { t } = useTranslation();
+  const theme = useTheme();
+  const tok = theme.tokens;
+  const { setTopbar } = useTopbar();
+
   const [toggles, setToggles] = useState([]);
   const [menus, setMenus] = useState({});
-  const [todayDate, setTodayDate] = useState('');
+  const [tomorrowDate, setTomorrowDate] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState({});
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [lastSaved, setLastSaved] = useState(false);
   const debounceRef = useRef({});
 
   useEffect(() => {
-    Promise.all([
-      api.get('/meals/today'),
-      api.get('/menus/tomorrow'),
-    ]).then(([toggleRes, menuRes]) => {
-      setToggles(toggleRes.data.toggles);
-      setTodayDate(toggleRes.data.date);
-      setMenus(menuRes.data.menus ?? {});
-    }).catch(() => {
-      setSnackbar({ open: true, message: t('meal.failedToLoad'), severity: 'error' });
-    }).finally(() => setLoading(false));
+    const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+    const label = tomorrow.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    setTopbar({ title: t('meal.tomorrowMeals'), subtitle: label });
+    return () => setTopbar({ title: '', subtitle: '', actions: null });
+  }, [t, setTopbar]);
+
+  useEffect(() => {
+    Promise.all([api.get('/meals/today'), api.get('/menus/tomorrow')])
+      .then(([toggleRes, menuRes]) => {
+        setToggles(toggleRes.data.toggles);
+        setTomorrowDate(toggleRes.data.date);
+        setMenus(menuRes.data.menus ?? {});
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, [t]);
 
   const save = useCallback(async (mealType, isOn, guestCount) => {
-    setSaving(s => ({ ...s, [mealType]: true }));
+    setSaving((s) => ({ ...s, [mealType]: true }));
     try {
       const { data } = await api.post('/meals/toggle', { mealType, isOn, guestCount });
-      setToggles(prev => prev.map(t =>
-        t.mealType === mealType ? { ...t, isOn: data.isOn, guestCount: data.guestCount } : t,
-      ));
-      setSnackbar({ open: true, message: t('meal.saved'), severity: 'success' });
-    } catch (err) {
-      setSnackbar({
-        open: true,
-        message: err.response?.data?.message ?? t('meal.failedToLoad'),
-        severity: 'error',
-      });
-    } finally {
-      setSaving(s => ({ ...s, [mealType]: false }));
-    }
-  }, [t]);
+      setToggles((prev) => prev.map((tg) => tg.mealType === mealType ? { ...tg, isOn: data.isOn, guestCount: data.guestCount } : tg));
+      setLastSaved(true);
+    } catch { /* silently revert */ }
+    finally { setSaving((s) => ({ ...s, [mealType]: false })); }
+  }, []);
 
   const handleToggle = useCallback((mealType, isOn) => {
-    const current = toggles.find(t => t.mealType === mealType);
-    const guestCount = isOn ? (current?.guestCount ?? 0) : 0;
-    setToggles(prev => prev.map(t => t.mealType === mealType ? { ...t, isOn, guestCount } : t));
-    save(mealType, isOn, guestCount);
+    const cur = toggles.find((tg) => tg.mealType === mealType);
+    setToggles((prev) => prev.map((tg) => tg.mealType === mealType ? { ...tg, isOn, guestCount: isOn ? (cur?.guestCount ?? 0) : 0 } : tg));
+    save(mealType, isOn, isOn ? (cur?.guestCount ?? 0) : 0);
   }, [toggles, save]);
 
   const handleGuestStep = useCallback((mealType, delta) => {
-    const current = toggles.find(t => t.mealType === mealType);
-    const newCount = Math.max(0, (current?.guestCount ?? 0) + delta);
-    setToggles(prev => prev.map(t => t.mealType === mealType ? { ...t, guestCount: newCount } : t));
-
+    const cur = toggles.find((tg) => tg.mealType === mealType);
+    const next = Math.max(0, (cur?.guestCount ?? 0) + delta);
+    setToggles((prev) => prev.map((tg) => tg.mealType === mealType ? { ...tg, guestCount: next } : tg));
     if (debounceRef.current[mealType]) clearTimeout(debounceRef.current[mealType]);
-    debounceRef.current[mealType] = setTimeout(() => {
-      save(mealType, current?.isOn ?? true, newCount);
-    }, 600);
+    debounceRef.current[mealType] = setTimeout(() => save(mealType, cur?.isOn ?? true, next), 600);
   }, [toggles, save]);
 
-  const allLocked = toggles.length > 0 && toggles.every(t => t.isCutoffPassed);
-  const mealOnCount = toggles.filter(t => t.isOn).length;
-  const guestTotal = toggles.reduce((sum, t) => sum + (t.isOn ? (t.guestCount ?? 0) : 0), 0);
+  if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}><CircularProgress /></Box>;
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
-        <CircularProgress />
+  const mealOnCount = toggles.filter((tg) => tg.isOn).length;
+  const guestTotal  = toggles.reduce((s, tg) => s + (tg.isOn ? (tg.guestCount ?? 0) : 0), 0);
+  const pad = { xs: '16px', md: '28px' };
+
+  const summaryCard = (
+    <Box sx={{ bgcolor: tok.surface, border: `1px solid ${tok.hairline}`, borderRadius: '12px', p: '16px 18px' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <Box sx={{ width: 4, height: 36, borderRadius: '2px', bgcolor: tok.accent, flexShrink: 0 }} />
+        <Box sx={{ flex: 1 }}>
+          <Typography sx={{ fontSize: 11, color: tok.muted, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500 }}>
+            {t('dashboard.yourTomorrow')}
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: '10px', mt: '4px' }}>
+            <Typography sx={{ fontSize: 24, fontWeight: 500, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: tok.ink }}>
+              Planned
+            </Typography>
+            <Typography sx={{ fontSize: 12, color: tok.muted }}>{mealOnCount} meals · {guestTotal} guests</Typography>
+          </Box>
+        </Box>
       </Box>
-    );
-  }
+      <Box sx={{ mt: '10px', pt: '10px', borderTop: `1px solid ${tok.hairlineSoft}`, display: 'flex', justifyContent: 'space-between', fontSize: 11, color: tok.muted }}>
+        <span>{t('dashboard.rateRunning')}</span>
+        {lastSaved && (
+          <Typography sx={{ fontSize: 11, color: tok.posInk, fontWeight: 500, display: 'flex', alignItems: 'center', gap: '3px' }}>
+            <CheckIcon sx={{ fontSize: 11 }} /> {t('dashboard.autoSaved')}
+          </Typography>
+        )}
+      </Box>
+    </Box>
+  );
 
   return (
-    <Container maxWidth="sm" sx={{ py: 3, px: 2 }}>
-      <Typography variant="h5" fontWeight={700} gutterBottom>
-        {t('meal.todayMeals')}
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        {formatDate(todayDate)}
-      </Typography>
+    <Box sx={{ p: pad, fontFeatureSettings: '"tnum","cv11"' }}>
+      <Box sx={{
+        display: { xs: 'flex', md: 'grid' },
+        flexDirection: 'column',
+        gridTemplateColumns: '1fr 280px',
+        gap: '14px',
+      }}>
+        <Box>
+          {/* Cutoff hint */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: '12px' }}>
+            <Typography sx={{ fontSize: 12, color: tok.muted }}>
+              <Box component="span" sx={{ color: tok.warnInk, fontWeight: 500 }}>—</Box>
+              {' '}{t('meal.cutoffsDiffer')}
+            </Typography>
+          </Box>
 
-      {user?.mealBlocked && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {t('dashboard.mealBlockedShort')}
-        </Alert>
-      )}
+          {user?.mealBlocked && (
+            <Alert severity="error" sx={{ mb: 2 }}>{t('dashboard.mealBlocked')}</Alert>
+          )}
 
-      {allLocked && !user?.mealBlocked && (
-        <Alert severity="info" icon={<LockOutlinedIcon />} sx={{ mb: 2 }}>
-          {t('meal.allMealsLocked')}
-        </Alert>
-      )}
+          {toggles.length === 0 ? (
+            <Alert severity="info">{t('meal.noMealTypes')}</Alert>
+          ) : (
+            /* Single composed sheet */
+            <Box sx={{ bgcolor: tok.surface, border: `1px solid ${tok.hairline}`, borderRadius: '14px' }}>
+              {toggles.map((toggle, i) => {
+                const items = menus[toggle.mealType] ?? [];
+                const isLocked = toggle.isCutoffPassed;
+                const disabled = isLocked || !!user?.mealBlocked;
+                return (
+                  <Box key={toggle.mealType} sx={{
+                    p: '16px 18px',
+                    borderTop: i === 0 ? 'none' : `1px solid ${tok.hairlineSoft}`,
+                    opacity: isLocked ? 0.6 : 1,
+                  }}>
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                      {/* Roman numeral badge */}
+                      <Box sx={{
+                        width: 32, height: 32, borderRadius: '8px', flexShrink: 0,
+                        bgcolor: toggle.isOn ? tok.onBg : tok.soft,
+                        color: toggle.isOn ? tok.onInk : tok.muted,
+                        display: 'grid', placeItems: 'center', fontSize: 12, fontWeight: 500,
+                      }}>
+                        {ROMAN[i] ?? String(i + 1)}
+                      </Box>
 
-      <Stack spacing={2}>
-        {toggles.map(toggle => (
-          <MealCard
-            key={toggle.mealType}
-            toggle={toggle}
-            menuItems={menus[toggle.mealType] ?? []}
-            mealBlocked={!!user?.mealBlocked}
-            saving={!!saving[toggle.mealType]}
-            onToggle={handleToggle}
-            onGuestStep={handleGuestStep}
-            guestMealsLabel={t('dashboard.guestMeals')}
-          />
-        ))}
+                      {/* Info */}
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
+                          <Typography sx={{ fontSize: 15, fontWeight: 500, textTransform: 'capitalize', color: tok.ink }}>
+                            {toggle.mealType}
+                          </Typography>
+                          {toggle.cutoffTime && (
+                            <Typography sx={{ fontSize: 11, color: tok.muted, fontVariantNumeric: 'tabular-nums' }}>
+                              {toggle.cutoffTime}
+                            </Typography>
+                          )}
+                        </Box>
+                        {toggle.cutoffTime && !isLocked && (
+                          <Typography sx={{ fontSize: 11, color: tok.dim, mt: '3px' }}>
+                            {t('meal.closesTomorrow', { time: toggle.cutoffTime })}
+                          </Typography>
+                        )}
+                        {items.length > 0 && (
+                          <Typography sx={{ fontSize: 12, color: tok.muted, mt: '7px', lineHeight: 1.5 }}>
+                            {items.join(' · ')}
+                          </Typography>
+                        )}
+                      </Box>
 
-        {toggles.length === 0 && (
-          <Alert severity="info">{t('meal.noMealTypes')}</Alert>
-        )}
-      </Stack>
+                      {/* Controls */}
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+                        {isLocked ? (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px', color: tok.dim }}>
+                            <LockOutlinedIcon sx={{ fontSize: 14 }} />
+                            <Typography sx={{ fontSize: 11, color: tok.dim }}>{t('meal.locked')}</Typography>
+                          </Box>
+                        ) : saving[toggle.mealType] ? (
+                          <CircularProgress size={20} />
+                        ) : (
+                          <MealToggle on={toggle.isOn} disabled={disabled} onChange={(v) => handleToggle(toggle.mealType, v)} />
+                        )}
+                        {toggle.isOn && !isLocked && (
+                          <GuestStepper
+                            value={toggle.guestCount ?? 0}
+                            disabled={disabled}
+                            onStep={(d) => handleGuestStep(toggle.mealType, d)}
+                            tok={tok}
+                          />
+                        )}
+                      </Box>
+                    </Box>
+                  </Box>
+                );
+              })}
+            </Box>
+          )}
 
-      <Card elevation={1} sx={{ mt: 3 }}>
-        <CardContent sx={{ pb: '16px !important' }}>
-          <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-            {t('meal.summary')}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            <Trans
-              i18nKey="meal.summaryText"
-              values={{ meals: mealOnCount, guests: guestTotal }}
-              components={{ b: <Box component="span" sx={{ fontWeight: 700, color: 'text.primary' }} /> }}
-            />
-          </Typography>
-        </CardContent>
-      </Card>
+          {/* Mobile summary */}
+          <Box sx={{ display: { xs: 'block', md: 'none' }, mt: '12px' }}>
+            {summaryCard}
+          </Box>
+        </Box>
 
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar(s => ({ ...s, open: false }))}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert
-          severity={snackbar.severity}
-          onClose={() => setSnackbar(s => ({ ...s, open: false }))}
-          sx={{ width: '100%' }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </Container>
+        {/* Desktop side rail */}
+        <Box sx={{ display: { xs: 'none', md: 'flex' }, flexDirection: 'column', gap: '12px', alignSelf: 'flex-start', position: 'sticky', top: 0 }}>
+          {summaryCard}
+          <Box sx={{ bgcolor: tok.surface, border: `1px solid ${tok.hairline}`, borderRadius: '12px', p: '14px 16px' }}>
+            <Typography sx={{ fontSize: 11, color: tok.muted, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500 }}>
+              {t('dashboard.headsUp')}
+            </Typography>
+            <Typography sx={{ fontSize: 13, mt: '6px', lineHeight: 1.5, color: tok.ink }}>
+              {t('meal.cutoffsDiffer')}
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   );
 }

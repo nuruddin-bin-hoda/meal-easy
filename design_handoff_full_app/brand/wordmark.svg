@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 100" font-family="DM Sans, system-ui, sans-serif">
+  
+  <text x="0" y="65" font-size="48" font-weight="600" fill="#1F1B17" letter-spacing="-1.2">Meal</text>
+  <text x="98" y="65" font-size="48" font-weight="500" font-style="italic" fill="#7F9E6E" letter-spacing="-1.2">Easy</text>
+</svg>

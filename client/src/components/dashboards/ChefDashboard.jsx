@@ -2,12 +2,25 @@ import { useState, useEffect } from 'react';
 import {
   Alert, Box, Card, CardContent, Chip, CircularProgress, Container,
   Grid, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography,
+  useTheme,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import api from '../../api/axios';
+import { getBadge } from '../../utils/badgeStyles';
+import { useTopbar } from '../../context/TopbarContext';
 
 export default function ChefDashboard() {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const mode = theme.palette.mode;
+  const isDark = mode === 'dark';
+  const { setTopbar } = useTopbar();
+
+  useEffect(() => {
+    setTopbar({ title: t('nav.dashboard') });
+    return () => setTopbar({ title: '', subtitle: '', actions: null });
+  }, [t, setTopbar]);
+
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -34,9 +47,12 @@ export default function ChefDashboard() {
   const menuMap = Object.fromEntries(todayMenu.map((m) => [m.mealType, m.items]));
   const mealTypes = [...new Set([...todayMenu.map((m) => m.mealType), ...todayPortions.map((p) => p.mealType)])];
 
+  const lowBg    = isDark ? '#3a1a1a' : '#FCEBEB';
+  const lowHover = isDark ? '#4a2222' : '#f8d7d7';
+
   return (
-    <Container maxWidth="lg" sx={{ py: 3 }}>
-      <Typography variant="h5" fontWeight={700} gutterBottom>
+    <Container maxWidth="lg" sx={{ py: '24px', px: { xs: 2, md: '32px' } }}>
+      <Typography sx={{ fontSize: 22, fontWeight: 500, color: 'text.primary', mb: 3 }}>
         {t('dashboard.chefTitle')}
       </Typography>
 
@@ -51,22 +67,17 @@ export default function ChefDashboard() {
           const portions = portionMap[mealType] ?? 0;
           return (
             <Grid key={mealType} size={{ xs: 12, sm: 6, md: 4 }}>
-              <Card elevation={3} sx={{ height: '100%' }}>
+              <Card elevation={0} sx={{ height: '100%' }}>
                 <CardContent>
-                  <Typography
-                    variant="overline"
-                    color="text.secondary"
-                    fontWeight={700}
-                    sx={{ letterSpacing: 1 }}
-                  >
+                  <Typography sx={{ fontSize: 12, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 1 }}>
                     {mealType}
                   </Typography>
 
-                  <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75, my: 1 }}>
-                    <Typography variant="h2" fontWeight={700} color="primary" lineHeight={1}>
+                  <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75, mb: 1 }}>
+                    <Typography sx={{ fontSize: 40, fontWeight: 500, color: 'primary.main', lineHeight: 1 }}>
                       {portions}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
                       {t('dashboard.portions')}
                     </Typography>
                   </Box>
@@ -90,9 +101,9 @@ export default function ChefDashboard() {
 
         {/* Stock table */}
         <Grid size={12}>
-          <Card elevation={2}>
+          <Card elevation={0}>
             <CardContent>
-              <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+              <Typography sx={{ fontSize: 12, fontWeight: 500, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 1.5 }}>
                 {t('dashboard.currentStock')}
               </Typography>
               {stock.length === 0 ? (
@@ -100,7 +111,7 @@ export default function ChefDashboard() {
               ) : (
                 <Table size="small">
                   <TableHead>
-                    <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: 'action.hover' } }}>
+                    <TableRow>
                       <TableCell>{t('common.item')}</TableCell>
                       <TableCell align="right">{t('common.quantity')}</TableCell>
                       <TableCell>{t('common.unit')}</TableCell>
@@ -112,24 +123,24 @@ export default function ChefDashboard() {
                       <TableRow
                         key={item._id}
                         sx={item.isLow ? {
-                          bgcolor: 'error.50',
-                          '&:hover': { bgcolor: 'error.100' },
+                          bgcolor: lowBg,
+                          '&:hover': { bgcolor: lowHover },
                         } : { '&:hover': { bgcolor: 'action.hover' } }}
                       >
-                        <TableCell sx={{ fontWeight: item.isLow ? 600 : 400 }}>
+                        <TableCell sx={{ fontWeight: item.isLow ? 500 : 400 }}>
                           {item.itemName}
                         </TableCell>
                         <TableCell
                           align="right"
-                          sx={{ fontWeight: 700, color: item.isLow ? 'error.main' : 'inherit' }}
+                          sx={{ fontWeight: 500, color: item.isLow ? getBadge('error', mode).color : 'inherit' }}
                         >
                           {item.quantity}
                         </TableCell>
                         <TableCell>{item.unit}</TableCell>
                         <TableCell align="center">
                           {item.isLow
-                            ? <Chip label={t('stock.lowStock')} color="error" size="small" />
-                            : <Chip label={t('stock.ok')} color="success" size="small" />}
+                            ? <Chip label={t('stock.lowStock')} size="small" sx={{ ...getBadge('error', mode), fontSize: 11 }} />
+                            : <Chip label={t('stock.ok')} size="small" sx={{ ...getBadge('success', mode), fontSize: 11 }} />}
                         </TableCell>
                       </TableRow>
                     ))}

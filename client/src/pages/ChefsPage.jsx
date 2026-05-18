@@ -1,15 +1,20 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
+import dayjs from 'dayjs';
 import {
   Alert, Box, Button, Chip, CircularProgress, Container, Dialog,
   DialogActions, DialogContent, DialogTitle, Snackbar, Stack,
   Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography,
+  useTheme,
 } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers';
 import AddIcon from '@mui/icons-material/Add';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { getBadge } from '../utils/badgeStyles';
+import { useTopbar } from '../context/TopbarContext';
 
 const today = () => format(new Date(), 'yyyy-MM-dd');
 const EMPTY_FORM = {
@@ -21,6 +26,14 @@ export default function ChefsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const theme = useTheme();
+  const mode = theme.palette.mode;
+  const { setTopbar } = useTopbar();
+
+  useEffect(() => {
+    setTopbar({ title: t('nav.chefs') });
+    return () => setTopbar({ title: '', subtitle: '', actions: null });
+  }, [t, setTopbar]);
 
   const [chefs, setChefs] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -86,7 +99,7 @@ export default function ChefsPage() {
       ) : (
         <Table size="small">
           <TableHead>
-            <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: 'action.hover' } }}>
+            <TableRow>
               <TableCell>{t('common.name')}</TableCell>
               <TableCell>{t('common.phone')}</TableCell>
               <TableCell>{t('chefs.joinDate')}</TableCell>
@@ -118,8 +131,8 @@ export default function ChefsPage() {
                 <TableCell align="center">
                   <Chip
                     label={chef.isActive ? t('common.active') : t('common.inactive')}
-                    color={chef.isActive ? 'success' : 'default'}
                     size="small"
+                    sx={getBadge(chef.isActive ? 'success' : 'warning', mode)}
                   />
                 </TableCell>
               </TableRow>
@@ -138,10 +151,11 @@ export default function ChefsPage() {
                 <TextField label={t('common.phone')} value={form.phone} required onChange={handleField('phone')} sx={{ flex: 1 }} />
               </Stack>
               <Stack direction="row" spacing={2}>
-                <TextField
-                  label={t('chefs.joinDate')} type="date" value={form.joinDate} required
-                  onChange={handleField('joinDate')}
-                  slotProps={{ inputLabel: { shrink: true } }} sx={{ flex: 1 }}
+                <DatePicker
+                  label={t('chefs.joinDate')}
+                  value={form.joinDate ? dayjs(form.joinDate) : null}
+                  onChange={(newVal) => setForm(f => ({ ...f, joinDate: newVal ? newVal.format('YYYY-MM-DD') : '' }))}
+                  slotProps={{ textField: { size: 'small', required: true, sx: { flex: 1 } } }}
                 />
                 <TextField
                   label={t('chefs.salaryAmount')} value={form.salaryAmount} type="number" required

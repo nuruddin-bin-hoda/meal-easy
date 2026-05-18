@@ -1,22 +1,26 @@
 import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
+import dayjs from 'dayjs';
 import {
   Alert, Box, Button, Card, CardContent, CardHeader, Chip, CircularProgress,
   Container, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle,
   Divider, Snackbar, Stack, Table, TableBody, TableCell, TableHead, TableRow,
-  TextField, Typography,
+  Typography, useTheme,
 } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers';
 import LockIcon from '@mui/icons-material/Lock';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { getBadge } from '../utils/badgeStyles';
+import { useTopbar } from '../context/TopbarContext';
 
 const currentMonth = () => format(new Date(), 'yyyy-MM');
 
 function StatCard({ label, value }) {
   return (
-    <Card variant="outlined" sx={{ flex: 1, minWidth: 140 }}>
+    <Card elevation={0} sx={{ flex: 1, minWidth: 140 }}>
       <CardContent sx={{ py: '12px !important' }}>
         <Typography variant="caption" color="text.secondary">{label}</Typography>
         <Typography variant="h6" fontWeight={700}>{value}</Typography>
@@ -29,6 +33,9 @@ export default function BillingPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const theme = useTheme();
+  const mode = theme.palette.mode;
+  const { setTopbar } = useTopbar();
 
   const [month, setMonth] = useState(currentMonth());
   const [preview, setPreview] = useState(null);
@@ -41,6 +48,11 @@ export default function BillingPage() {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   const notify = (message, severity = 'success') => setSnackbar({ open: true, message, severity });
+
+  useEffect(() => {
+    setTopbar({ title: t('billing.title'), subtitle: month });
+    return () => setTopbar({ title: '', subtitle: '', actions: null });
+  }, [t, setTopbar, month]);
 
   useEffect(() => {
     if (user && user.role !== 'admin' && user.role !== 'superadmin') {
@@ -111,16 +123,18 @@ export default function BillingPage() {
       <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>
         <Typography variant="h5" fontWeight={700}>{t('billing.title')}</Typography>
         {isLocked && (
-          <Chip icon={<LockIcon />} label={t('billing.locked')} color="warning" size="small" />
+          <Chip icon={<LockIcon />} label={t('billing.locked')} size="small" sx={getBadge('warning', mode)} />
         )}
       </Stack>
 
       <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>
-        <TextField
-          label={t('common.month')} value={month} size="small"
-          onChange={e => setMonth(e.target.value)}
-          placeholder="YYYY-MM" slotProps={{ inputLabel: { shrink: true } }}
-          sx={{ width: 160 }}
+        <DatePicker
+          label={t('common.month')}
+          views={['year', 'month']}
+          openTo="month"
+          value={month ? dayjs(month + '-01') : null}
+          onChange={(newVal) => setMonth(newVal ? newVal.format('YYYY-MM') : '')}
+          slotProps={{ textField: { size: 'small', sx: { width: 160 } } }}
         />
         {!isLocked && data && (
           <Button
@@ -172,7 +186,7 @@ export default function BillingPage() {
           )}
 
           {(previewRows.length > 0 || lockedRows.length > 0) && (
-            <Card elevation={2}>
+            <Card elevation={0}>
               {!isLocked && (
                 <CardHeader
                   title={t('billing.previewNote')}
@@ -183,7 +197,7 @@ export default function BillingPage() {
               <Divider />
               <Table size="small">
                 <TableHead>
-                  <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: 'action.hover' } }}>
+                  <TableRow>
                     <TableCell>{t('billing.userCol')}</TableCell>
                     <TableCell align="right">{t('billing.meals')}</TableCell>
                     <TableCell align="right">{t('billing.guestMeals')}</TableCell>

@@ -3,7 +3,7 @@ import {
   Alert, Box, Button, Chip, CircularProgress, Container, Dialog,
   DialogActions, DialogContent, DialogTitle, IconButton, Snackbar,
   Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField,
-  ToggleButton, ToggleButtonGroup, Typography,
+  ToggleButton, ToggleButtonGroup, Typography, useTheme,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import ArchiveIcon from '@mui/icons-material/Archive';
@@ -13,6 +13,8 @@ import UnarchiveIcon from '@mui/icons-material/Unarchive';
 import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { getBadge } from '../utils/badgeStyles';
+import { useTopbar } from '../context/TopbarContext';
 
 const EMPTY_ADD = { itemName: '', quantity: '', unit: '', lowThreshold: '' };
 const EMPTY_SETTINGS = { itemName: '', lowThreshold: '' };
@@ -20,6 +22,16 @@ const EMPTY_SETTINGS = { itemName: '', lowThreshold: '' };
 export default function StockPage() {
   const { user } = useAuth();
   const { t } = useTranslation();
+  const theme = useTheme();
+  const mode = theme.palette.mode;
+  const { setTopbar } = useTopbar();
+
+  useEffect(() => {
+    setTopbar({ title: t('stock.title') });
+    return () => setTopbar({ title: '', subtitle: '', actions: null });
+  }, [t, setTopbar]);
+  const isDark = mode === 'dark';
+
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
   const canEdit = isAdmin || user?.role === 'chef';
 
@@ -161,6 +173,9 @@ export default function StockPage() {
     }
   };
 
+  const lowRowBg    = isDark ? '#3a1a1a' : '#FCEBEB';
+  const lowRowHover = isDark ? '#4a2222' : '#f8d7d7';
+
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
@@ -176,7 +191,7 @@ export default function StockPage() {
         value={view}
         exclusive
         onChange={(_, val) => { if (val) setView(val); }}
-        color="success"
+        color="primary"
         size="small"
         sx={{ mb: 2.5 }}
       >
@@ -189,7 +204,7 @@ export default function StockPage() {
       ) : view === 'active' ? (
         <Table size="small">
           <TableHead>
-            <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: 'action.hover' } }}>
+            <TableRow>
               <TableCell>{t('common.name')}</TableCell>
               <TableCell align="right">{t('common.quantity')}</TableCell>
               <TableCell>{t('common.unit')}</TableCell>
@@ -209,7 +224,7 @@ export default function StockPage() {
               <TableRow
                 key={item._id}
                 hover
-                sx={item.isLow ? { bgcolor: 'error.50', '&:hover': { bgcolor: 'error.100' } } : {}}
+                sx={item.isLow ? { bgcolor: lowRowBg, '&:hover': { bgcolor: lowRowHover } } : {}}
               >
                 <TableCell>{item.itemName}</TableCell>
 
@@ -251,8 +266,8 @@ export default function StockPage() {
 
                 <TableCell align="center">
                   {item.isLow
-                    ? <Chip label={t('stock.lowStock')} color="error" size="small" />
-                    : <Chip label={t('stock.ok')} color="success" size="small" />}
+                    ? <Chip label={t('stock.lowStock')} size="small" sx={getBadge('error', mode)} />
+                    : <Chip label={t('stock.ok')} size="small" sx={getBadge('success', mode)} />}
                 </TableCell>
 
                 {isAdmin && (
@@ -277,7 +292,7 @@ export default function StockPage() {
       ) : (
         <Table size="small">
           <TableHead>
-            <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: 'action.hover' } }}>
+            <TableRow>
               <TableCell>{t('common.name')}</TableCell>
               <TableCell align="right">{t('common.quantity')}</TableCell>
               <TableCell>{t('common.unit')}</TableCell>

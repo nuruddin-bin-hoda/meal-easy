@@ -3,21 +3,32 @@ import { format } from 'date-fns';
 import {
   Alert, Box, Button, Card, Chip, CircularProgress, Container,
   Stack, Table, TableBody, TableCell, TableHead, TableRow,
-  TextField, Typography, MenuItem, Snackbar,
+  TextField, Typography, MenuItem, Snackbar, useTheme,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
+import { getBadge } from '../utils/badgeStyles';
+import { useTopbar } from '../context/TopbarContext';
 
-const STATUS_COLOR = {
+const STATUS_TYPE = {
   active:   'success',
   pending:  'warning',
   blocked:  'error',
-  deleted:  'default',
-  rejected: 'default',
+  deleted:  'warning',
+  rejected: 'error',
 };
 
 export default function UsersPage() {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const mode = theme.palette.mode;
+  const { setTopbar } = useTopbar();
+
+  useEffect(() => {
+    setTopbar({ title: t('nav.users') });
+    return () => setTopbar({ title: '', subtitle: '', actions: null });
+  }, [t, setTopbar]);
+
   const [users, setUsers]     = useState([]);
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('active');
@@ -76,10 +87,10 @@ export default function UsersPage() {
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}><CircularProgress /></Box>
       ) : (
-        <Card elevation={2}>
+        <Card elevation={0}>
           <Table size="small">
             <TableHead>
-              <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: 'action.hover' } }}>
+              <TableRow>
                 <TableCell>{t('common.name')}</TableCell>
                 <TableCell>{t('common.phone')}</TableCell>
                 <TableCell>{t('common.room')}</TableCell>
@@ -103,9 +114,8 @@ export default function UsersPage() {
                   <TableCell align="center">
                     <Chip
                       label={u.status}
-                      color={STATUS_COLOR[u.status] ?? 'default'}
                       size="small"
-                      sx={{ textTransform: 'capitalize' }}
+                      sx={{ ...getBadge(STATUS_TYPE[u.status] ?? 'info', mode), textTransform: 'capitalize' }}
                     />
                   </TableCell>
                   <TableCell>{format(new Date(u.createdAt), 'dd MMM yyyy')}</TableCell>
