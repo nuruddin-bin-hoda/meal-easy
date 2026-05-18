@@ -59,16 +59,19 @@ const NAV_USER = [
 
 const NAV_ADMIN = [
   { path: '/dashboard',  label: 'nav.dashboard',  Icon: DashboardIcon },
-  { path: '/meals',      label: 'nav.mealTotals', Icon: MealsIcon     },
-  { path: '/menu/set',   label: 'nav.setMenu',    Icon: MenuBookIcon  },
-  { path: '/purchases',  label: 'nav.purchases',  Icon: PurchasesIcon },
-  { path: '/costs',      label: 'nav.costs',      Icon: CostsIcon     },
-  { path: '/deposits',   label: 'nav.deposits',   Icon: DepositsIcon  },
-  { path: '/billing',    label: 'nav.billing',    Icon: BillingIcon   },
-  { path: '/stock',      label: 'nav.stock',      Icon: StockIcon     },
-  { path: '/chefs',      label: 'nav.chefs',      Icon: ChefsIcon     },
-  { path: '/users',      label: 'nav.users',      Icon: UsersIcon     },
-  { path: '/audit-logs', label: 'nav.auditLogs',  Icon: AuditIcon     },
+  { path: '/users',      label: 'nav.users',       Icon: UsersIcon     },
+  { path: '/meals',      label: 'nav.meals',       Icon: MealsIcon     },
+  { path: '/menu',       label: 'nav.menu',        Icon: MenuBookIcon  },
+  { path: '/menu/set',   label: 'nav.setMenu',     Icon: MenuBookIcon  },
+  { path: '/purchases',  label: 'nav.purchases',   Icon: PurchasesIcon },
+  { path: '/costs',      label: 'nav.costs',       Icon: CostsIcon     },
+  { path: '/deposits',   label: 'nav.deposits',    Icon: DepositsIcon  },
+  { path: '/billing',    label: 'nav.billing',     Icon: BillingIcon   },
+  { path: '/stock',      label: 'nav.stock',       Icon: StockIcon     },
+  { path: '/chefs',      label: 'nav.chefs',       Icon: ChefsIcon     },
+  { path: '/reports',    label: 'nav.reports',     Icon: ReportIcon    },
+  { path: '/audit-logs', label: 'nav.auditLogs',   Icon: AuditIcon     },
+  { path: '/settings',   label: 'nav.settings',    Icon: SettingsIcon  },
 ];
 
 const NAV_CHEF = [
