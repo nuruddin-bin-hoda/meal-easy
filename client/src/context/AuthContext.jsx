@@ -48,7 +48,14 @@ export function AuthProvider({ children }) {
     subscribeToPush();
   }, [user?._id]);
 
-  const login = (userData) => setUser(userData);
+  const login = async (userData) => {
+    try {
+      const res = await api.get('/auth/me');
+      setUser(res.data);
+    } catch {
+      setUser(userData);
+    }
+  };
 
   const logout = async () => {
     try {

@@ -2,7 +2,10 @@ import { useState } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import {
   Box, TextField, Button, Typography, Alert, CircularProgress, useTheme,
+  InputAdornment, IconButton,
 } from '@mui/material';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useColorMode } from '../context/ThemeContext';
@@ -28,6 +31,7 @@ export default function LoginPage() {
   const { toggleMode, mode } = useColorMode();
 
   const [form, setForm] = useState({ phone: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -50,12 +54,23 @@ export default function LoginPage() {
     }
   };
 
+  const autofillBg   = theme.palette.mode === 'dark' ? '#253040' : '#f3f6fa';
+  const autofillText = theme.palette.mode === 'dark' ? '#cdd6e4' : '#111827';
+
   const inputSx = {
     '& .MuiOutlinedInput-root': {
       backgroundColor: tok.bg,
       '& fieldset': { borderColor: tok.hairline },
       '&:hover fieldset': { borderColor: tok.muted },
       '&.Mui-focused fieldset': { borderColor: tok.brandSage },
+      '& input:-webkit-autofill': {
+        WebkitBoxShadow: `0 0 0 100px ${autofillBg} inset`,
+        WebkitTextFillColor: autofillText,
+      },
+      '& input:-webkit-autofill:focus': {
+        WebkitBoxShadow: `0 0 0 100px ${autofillBg} inset`,
+        WebkitTextFillColor: autofillText,
+      },
     },
     '& .MuiInputBase-input': { color: tok.ink, fontSize: 14 },
     '& .MuiInputLabel-root': { color: tok.muted, fontSize: 13 },
@@ -64,10 +79,16 @@ export default function LoginPage() {
 
   return (
     <Box sx={{
-      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      bgcolor: tok.bg, color: tok.ink, p: 2,
+      minHeight: '100dvh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'background.default',
+      padding: '16px',
+      overflowY: 'auto',
     }}>
-      <Box sx={{ width: '100%', maxWidth: 360, display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Box sx={{ width: '100%', maxWidth: '400px', display: 'flex', flexDirection: 'column', gap: 2 }}>
 
         {/* Logo */}
         <Box sx={{ textAlign: 'center', mb: 1, color: tok.ink }}>
@@ -116,13 +137,29 @@ export default function LoginPage() {
             <TextField
               label={t('auth.password')}
               name="password"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               value={form.password}
               onChange={handleChange}
               fullWidth
               required
               autoComplete="current-password"
               size="small"
+              slotProps={{
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        edge="end"
+                        size="small"
+                        sx={{ color: 'text.secondary' }}
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
+              }}
               sx={inputSx}
             />
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: '6px' }}>

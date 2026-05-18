@@ -2,8 +2,11 @@ import { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import {
   Box, Button, Typography, Alert, CircularProgress, TextField, useTheme,
+  InputAdornment, IconButton,
 } from '@mui/material';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutlined';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 
@@ -17,11 +20,16 @@ export default function RegisterPage() {
   const tok = theme.tokens;
 
   const [form, setForm] = useState(INITIAL);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [photo, setPhoto] = useState(null);
   const [photoError, setPhotoError] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const autofillBg   = theme.palette.mode === 'dark' ? '#253040' : '#f3f6fa';
+  const autofillText = theme.palette.mode === 'dark' ? '#cdd6e4' : '#111827';
 
   const inputSx = {
     '& .MuiOutlinedInput-root': {
@@ -29,6 +37,14 @@ export default function RegisterPage() {
       '& fieldset': { borderColor: tok.hairline },
       '&:hover fieldset': { borderColor: tok.muted },
       '&.Mui-focused fieldset': { borderColor: tok.brandSage },
+      '& input:-webkit-autofill': {
+        WebkitBoxShadow: `0 0 0 100px ${autofillBg} inset`,
+        WebkitTextFillColor: autofillText,
+      },
+      '& input:-webkit-autofill:focus': {
+        WebkitBoxShadow: `0 0 0 100px ${autofillBg} inset`,
+        WebkitTextFillColor: autofillText,
+      },
     },
     '& .MuiInputBase-input': { color: tok.ink, fontSize: 14 },
     '& .MuiInputLabel-root': { color: tok.muted, fontSize: 13 },
@@ -75,7 +91,7 @@ export default function RegisterPage() {
 
   if (success) {
     return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2, bgcolor: tok.bg }}>
+      <Box sx={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'background.default', padding: '16px', overflowY: 'auto' }}>
         <Box sx={{ width: '100%', maxWidth: 380, textAlign: 'center' }}>
           <Alert severity="success" sx={{ mb: 2, borderRadius: '10px' }}>{t('auth.registrationSuccess')}</Alert>
           <Box component={RouterLink} to="/login" sx={{ fontSize: 14, color: tok.ink, fontWeight: 500 }}>
@@ -88,11 +104,16 @@ export default function RegisterPage() {
 
   return (
     <Box sx={{
-      minHeight: '100vh', bgcolor: tok.bg, color: tok.ink,
-      display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
-      p: { xs: '24px 16px', md: '32px' }, overflowY: 'auto',
+      minHeight: '100dvh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'background.default',
+      padding: '16px',
+      overflowY: 'auto',
     }}>
-      <Box sx={{ width: '100%', maxWidth: 380, display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Box sx={{ width: '100%', maxWidth: '400px', display: 'flex', flexDirection: 'column', gap: 2 }}>
 
         {/* Back link + heading */}
         <Box>
@@ -129,8 +150,48 @@ export default function RegisterPage() {
             slotProps={{ input: { startAdornment: <Box component="span" sx={{ color: tok.muted, fontSize: 14, mr: 1 }}>+88</Box> } }}
           />
           <TextField label={t('auth.roomNumber')} name="roomNumber" value={form.roomNumber} onChange={handleChange} fullWidth required size="small" sx={inputSx} />
-          <TextField label={t('auth.password')} name="password" type="password" value={form.password} onChange={handleChange} fullWidth required autoComplete="new-password" size="small" sx={inputSx} />
-          <TextField label={t('auth.confirmPassword')} name="confirmPassword" type="password" value={form.confirmPassword} onChange={handleChange} fullWidth required autoComplete="new-password" size="small" sx={inputSx} />
+          <TextField
+            label={t('auth.password')} name="password"
+            type={showPassword ? 'text' : 'password'}
+            value={form.password} onChange={handleChange}
+            fullWidth required autoComplete="new-password" size="small"
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      edge="end" size="small" sx={{ color: 'text.secondary' }}
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
+            sx={inputSx}
+          />
+          <TextField
+            label={t('auth.confirmPassword')} name="confirmPassword"
+            type={showConfirmPassword ? 'text' : 'password'}
+            value={form.confirmPassword} onChange={handleChange}
+            fullWidth required autoComplete="new-password" size="small"
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowConfirmPassword((prev) => !prev)}
+                      edge="end" size="small" sx={{ color: 'text.secondary' }}
+                    >
+                      {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
+            sx={inputSx}
+          />
 
           {/* Photo uploader */}
           <Box>

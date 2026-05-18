@@ -1,4 +1,4 @@
-import { Box, Typography, useTheme } from '@mui/material';
+import { Avatar, Box, Typography, useTheme } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useTranslation } from 'react-i18next';
@@ -10,6 +10,11 @@ import { useEffect } from 'react';
 import { getBadge } from '../utils/badgeStyles';
 
 const ROLE_TYPE = { superadmin: 'error', admin: 'warning', user: 'info', chef: 'success' };
+
+const getPhotoUrl = (photo) => {
+  if (!photo) return null;
+  return `/uploads/${photo}`;
+};
 
 const getInitials = (name = '') => {
   const p = name.trim().split(/\s+/);
@@ -48,13 +53,16 @@ export default function ProfilePage() {
       {/* Hero card */}
       <Box sx={{ bgcolor: tok.surface, border: `1px solid ${tok.hairline}`, borderRadius: '12px', p: '20px 22px' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <Box sx={{
-            width: 56, height: 56, borderRadius: '999px', flexShrink: 0,
-            bgcolor: tok.accent, color: tok.accentInk,
-            display: 'grid', placeItems: 'center', fontSize: 20, fontWeight: 500,
-          }}>
-            {getInitials(user?.name ?? '').toUpperCase()}
-          </Box>
+          {user?.photo ? (
+            <Avatar
+              src={getPhotoUrl(user?.photo)}
+              sx={{ width: 64, height: 64, fontSize: 24 }}
+            />
+          ) : (
+            <Avatar sx={{ width: 64, height: 64, fontSize: 24, backgroundColor: 'primary.main' }}>
+              {getInitials(user?.name ?? '').toUpperCase()}
+            </Avatar>
+          )}
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography sx={{ fontSize: 18, fontWeight: 500, color: tok.ink }} noWrap>{user?.name}</Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px', mt: '4px', flexWrap: 'wrap' }}>

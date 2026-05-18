@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
+const path = require('path');
 const connectDB = require('./config/db');
 const { PORT, CLIENT_URL, NODE_ENV } = require('./config/env');
 const errorHandler = require('./middleware/errorHandler');
@@ -64,6 +65,7 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health check (used by Docker healthcheck and monitoring)
 app.get('/api/v1/health', (_req, res) => res.json({ status: 'ok', env: NODE_ENV }));
