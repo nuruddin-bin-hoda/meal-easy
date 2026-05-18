@@ -232,9 +232,13 @@ export default function AppLayout({ children }) {
         px: '14px', py: '14px',
         borderTop: `1px solid ${tok.hairlineSoft}`,
       }}>
-        <Avatar sx={{ width: 32, height: 32, bgcolor: '#7F9E6E', color: '#FAF8F3', fontSize: 12, fontWeight: 500, flexShrink: 0 }}>
-          {getInitials(userName)}
-        </Avatar>
+        {user?.photo ? (
+          <Avatar src={`/uploads/${user.photo}`} sx={{ width: 32, height: 32, flexShrink: 0 }} />
+        ) : (
+          <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: 12, fontWeight: 500, flexShrink: 0 }}>
+            {getInitials(userName)}
+          </Avatar>
+        )}
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography sx={{ fontSize: 13, fontWeight: 500, color: tok.ink }} noWrap>
             {userName.split(' ').slice(0, 2).join(' ')}
@@ -329,9 +333,20 @@ export default function AppLayout({ children }) {
       </Box>
       {actions}
       <NotificationBell />
-      <Avatar sx={{ width: 36, height: 36, bgcolor: '#7F9E6E', color: '#FAF8F3', fontSize: 13, fontWeight: 500, flexShrink: 0 }}>
-        {getInitials(userName)}
-      </Avatar>
+      {user?.photo ? (
+        <Avatar
+          src={`/uploads/${user.photo}`}
+          sx={{ width: 36, height: 36, flexShrink: 0, cursor: 'pointer' }}
+          onClick={() => navigate('/profile')}
+        />
+      ) : (
+        <Avatar
+          sx={{ width: 36, height: 36, bgcolor: 'primary.main', fontSize: 13, fontWeight: 500, flexShrink: 0, cursor: 'pointer' }}
+          onClick={() => navigate('/profile')}
+        >
+          {getInitials(userName)}
+        </Avatar>
+      )}
     </Box>
   );
 
