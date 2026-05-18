@@ -24,7 +24,6 @@ import {
   GridView as DashboardIcon,
   MoreHoriz as MoreIcon,
   Close as CloseIcon,
-  Search as SearchIcon,
 } from '@mui/icons-material';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -270,19 +269,6 @@ export default function AppLayout({ children }) {
         )}
         <Typography sx={{ fontSize: 18, fontWeight: 500, letterSpacing: '-0.01em', color: tok.ink }}>
           {title || t('appName')}
-        </Typography>
-      </Box>
-
-      {/* Search box (decorative) */}
-      <Box sx={{
-        display: 'flex', alignItems: 'center', gap: '8px',
-        px: '12px', py: '6px', borderRadius: '8px',
-        bgcolor: tok.bg, border: `1px solid ${tok.hairline}`,
-        color: tok.muted, fontSize: 13, width: 220, cursor: 'text',
-      }}>
-        <SearchIcon sx={{ fontSize: 14, flexShrink: 0 }} />
-        <Typography sx={{ fontSize: 13, color: tok.muted }}>
-          Search…
         </Typography>
       </Box>
 
