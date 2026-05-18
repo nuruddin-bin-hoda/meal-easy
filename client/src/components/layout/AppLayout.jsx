@@ -70,6 +70,7 @@ const NAV_ADMIN = [
   { path: '/chefs',      label: 'nav.chefs',       Icon: ChefsIcon     },
   { path: '/reports',    label: 'nav.reports',     Icon: ReportIcon    },
   { path: '/audit-logs', label: 'nav.auditLogs',   Icon: AuditIcon     },
+  { path: '/profile',   label: 'nav.profile',     Icon: ProfileIcon   },
   { path: '/settings',   label: 'nav.settings',    Icon: SettingsIcon  },
 ];
 

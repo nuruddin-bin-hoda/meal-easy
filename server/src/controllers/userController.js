@@ -1,3 +1,4 @@
+const bcrypt = require('bcryptjs');
 const { User, BillingCycle, AuditLog } = require('../models');
 const { sendPushToUser } = require('../utils/pushService');
 
@@ -180,4 +181,35 @@ const toggleMealBlock = async (req, res, next) => {
   }
 };
 
-module.exports = { listUsers, getUser, updateUser, deleteUser, approveUser, rejectUser, toggleMealBlock };
+// PATCH /api/v1/users/:id/password  — self only
+const changePassword = async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'currentPassword and newPassword are required.' });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'New password must be at least 6 characters.' });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user || user.status === 'deleted') {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    const match = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!match) {
+      return res.status(400).json({ message: 'Current password is incorrect.' });
+    }
+
+    user.passwordHash = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    res.json({ message: 'Password changed successfully.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { listUsers, getUser, updateUser, deleteUser, approveUser, rejectUser, toggleMealBlock, changePassword };

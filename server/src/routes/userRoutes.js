@@ -10,6 +10,7 @@ const {
   approveUser,
   rejectUser,
   toggleMealBlock,
+  changePassword,
 } = require('../controllers/userController');
 
 const router = Router();
@@ -23,5 +24,6 @@ router.delete('/users/:id', authenticate, deleteUser);
 router.patch('/users/:id/approve', authenticate, authorize(adminRoles), approveUser);
 router.patch('/users/:id/reject', authenticate, authorize(adminRoles), rejectUser);
 router.patch('/users/:id/meal-block', authenticate, authorize(adminRoles), toggleMealBlock);
+router.patch('/users/:id/password', authenticate, changePassword);
 
 module.exports = router;

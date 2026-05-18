@@ -1,8 +1,11 @@
-import { Avatar, Box, Button, CircularProgress, IconButton, TextField, Typography, useTheme } from '@mui/material';
+import { Avatar, Box, Button, CircularProgress, IconButton, Snackbar, Alert, TextField, Typography, useTheme } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import EditIcon from '@mui/icons-material/Edit';
+import LockIcon from '@mui/icons-material/Lock';
 import LogoutIcon from '@mui/icons-material/Logout';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutlined';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -27,6 +30,8 @@ const getInitials = (name = '') => {
 const MAX_BYTES = 2 * 1024 * 1024;
 const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp'];
 
+const EMPTY_PASSWORD_FORM = { currentPassword: '', newPassword: '', confirmPassword: '' };
+
 export default function ProfilePage() {
   const { user, login, logout } = useAuth();
   const { t } = useTranslation();
@@ -37,12 +42,24 @@ export default function ProfilePage() {
   const { toggleMode } = useColorMode();
   const { setTopbar } = useTopbar();
 
+  // Profile edit state
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [form, setForm] = useState({ name: '', roomNumber: '' });
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
+
+  // Password change state
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [passwordForm, setPasswordForm] = useState(EMPTY_PASSWORD_FORM);
+  const [showCurrentPw, setShowCurrentPw] = useState(false);
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
+
+  // Snackbar
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const notify = (message, severity = 'success') => setSnackbar({ open: true, message, severity });
 
   useEffect(() => {
     setTopbar({ title: t('nav.profile'), subtitle: '' });
@@ -64,7 +81,7 @@ export default function ProfilePage() {
     { label: t('common.name'),     value: user?.name },
     { label: t('auth.roomNumber'), value: user?.roomNumber },
     { label: t('auth.phone'),      value: user?.phone },
-    { label: 'Member since',   value: user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long' }) : null },
+    { label: 'Member since',       value: user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long' }) : null },
   ].filter((f) => f.value);
 
   const handlePhotoChange = (e) => {
@@ -85,7 +102,7 @@ export default function ProfilePage() {
       data.append('roomNumber', form.roomNumber.trim());
       if (photoFile) data.append('photo', photoFile);
       await api.patch(`/users/${userId}`, data);
-      await login(user); // re-fetch full profile into auth context
+      await login(user);
       setEditing(false);
     } catch (err) {
       setSaveError(err.response?.data?.message ?? 'Failed to save. Please try again.');
@@ -101,8 +118,44 @@ export default function ProfilePage() {
     setPhotoFile(null);
   };
 
+  const handlePasswordChange = async () => {
+    if (passwordForm.newPassword.length < 6) {
+      notify('New password must be at least 6 characters.', 'error');
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      notify('Passwords do not match.', 'error');
+      return;
+    }
+    setSavingPassword(true);
+    try {
+      await api.patch(`/users/${user._id}/password`, {
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+      });
+      setShowPasswordForm(false);
+      setPasswordForm(EMPTY_PASSWORD_FORM);
+      setShowCurrentPw(false);
+      setShowNewPw(false);
+      notify('Password changed successfully.');
+    } catch (err) {
+      notify(err.response?.data?.message ?? 'Failed to change password.', 'error');
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
+  const handlePasswordCancel = () => {
+    setShowPasswordForm(false);
+    setPasswordForm(EMPTY_PASSWORD_FORM);
+    setShowCurrentPw(false);
+    setShowNewPw(false);
+  };
+
   const pad = { xs: '16px', md: '28px' };
   const avatarSrc = photoPreview ?? getPhotoUrl(user?.photo);
+
+  const pwFieldSx = { fontSize: 14 };
 
   return (
     <Box sx={{ p: pad, display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: 560 }}>
@@ -146,16 +199,14 @@ export default function ProfilePage() {
             label={t('common.name')}
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            fullWidth
-            size="small"
+            fullWidth size="small"
           />
 
           <TextField
             label={t('auth.roomNumber')}
             value={form.roomNumber}
             onChange={(e) => setForm((f) => ({ ...f, roomNumber: e.target.value }))}
-            fullWidth
-            size="small"
+            fullWidth size="small"
           />
 
           {/* Photo upload */}
@@ -245,6 +296,80 @@ export default function ProfilePage() {
         </Box>
       </Box>
 
+      {/* Change password button */}
+      {!showPasswordForm && (
+        <Button
+          variant="outlined"
+          startIcon={<LockIcon />}
+          onClick={() => setShowPasswordForm(true)}
+          size="small"
+          sx={{ alignSelf: 'flex-start', borderColor: tok.hairline, color: tok.muted, '&:hover': { borderColor: tok.muted, color: tok.ink } }}
+        >
+          Change Password
+        </Button>
+      )}
+
+      {/* Password change form */}
+      {showPasswordForm && (
+        <Box sx={{ bgcolor: tok.surface, border: `1px solid ${tok.hairline}`, borderRadius: '12px', p: '20px 22px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <Typography sx={{ fontSize: 14, fontWeight: 600, color: tok.ink }}>Change Password</Typography>
+
+          <TextField
+            label="Current Password"
+            type={showCurrentPw ? 'text' : 'password'}
+            value={passwordForm.currentPassword}
+            onChange={(e) => setPasswordForm((f) => ({ ...f, currentPassword: e.target.value }))}
+            fullWidth size="small"
+            inputProps={{ style: pwFieldSx }}
+            InputProps={{
+              endAdornment: (
+                <IconButton size="small" onClick={() => setShowCurrentPw((v) => !v)} edge="end" sx={{ color: 'text.secondary' }}>
+                  {showCurrentPw ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                </IconButton>
+              ),
+            }}
+          />
+
+          <TextField
+            label="New Password"
+            type={showNewPw ? 'text' : 'password'}
+            value={passwordForm.newPassword}
+            onChange={(e) => setPasswordForm((f) => ({ ...f, newPassword: e.target.value }))}
+            fullWidth size="small"
+            inputProps={{ style: pwFieldSx }}
+            InputProps={{
+              endAdornment: (
+                <IconButton size="small" onClick={() => setShowNewPw((v) => !v)} edge="end" sx={{ color: 'text.secondary' }}>
+                  {showNewPw ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                </IconButton>
+              ),
+            }}
+          />
+
+          <TextField
+            label="Confirm New Password"
+            type="password"
+            value={passwordForm.confirmPassword}
+            onChange={(e) => setPasswordForm((f) => ({ ...f, confirmPassword: e.target.value }))}
+            fullWidth size="small"
+            inputProps={{ style: pwFieldSx }}
+          />
+
+          <Box sx={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+            <Button size="small" onClick={handlePasswordCancel} disabled={savingPassword} sx={{ color: tok.muted }}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              size="small" variant="contained" onClick={handlePasswordChange}
+              disabled={savingPassword || !passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword}
+              sx={{ bgcolor: tok.btnBg, color: tok.btnInk, '&:hover': { bgcolor: mode === 'dark' ? '#D4CCBC' : '#2D2820' } }}
+            >
+              {savingPassword ? <CircularProgress size={16} color="inherit" /> : 'Update Password'}
+            </Button>
+          </Box>
+        </Box>
+      )}
+
       {/* Danger row */}
       <Box sx={{ bgcolor: tok.surface, border: `1px solid ${tok.hairline}`, borderRadius: '12px' }}>
         <Box
@@ -262,6 +387,17 @@ export default function ProfilePage() {
           <Typography sx={{ fontSize: 14, fontWeight: 500, color: tok.dangerInk }}>{t('nav.logout')}</Typography>
         </Box>
       </Box>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3500}
+        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity={snackbar.severity} onClose={() => setSnackbar((s) => ({ ...s, open: false }))} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
 
     </Box>
   );
