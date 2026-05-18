@@ -45,7 +45,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const res = await api.post('/auth/login', form);
-      login(res.data.user);
+      await login(res.data.user);
       navigate('/dashboard', { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || t('auth.loginFailed'));
