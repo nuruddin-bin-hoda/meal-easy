@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   Alert, Box, Button, CircularProgress,
-  Container, Divider, IconButton, InputAdornment,
+  Container, Divider, IconButton, InputAdornment, ListSubheader, MenuItem, Select,
   Snackbar, Stack, Switch, TextField, Typography,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -15,36 +15,120 @@ import api from '../api/axios';
 import { useTopbar } from '../context/TopbarContext';
 import { useSettings } from '../context/SettingsContext';
 
-const TIMEZONES = [
-  { region: 'ASIA', zones: [
-    { id: 'Asia/Dhaka',     label: 'Asia/Dhaka (UTC+6)' },
-    { id: 'Asia/Kolkata',   label: 'Asia/Kolkata (UTC+5:30)' },
-    { id: 'Asia/Karachi',   label: 'Asia/Karachi (UTC+5)' },
-    { id: 'Asia/Tokyo',     label: 'Asia/Tokyo (UTC+9)' },
-    { id: 'Asia/Dubai',     label: 'Asia/Dubai (UTC+4)' },
-    { id: 'Asia/Singapore', label: 'Asia/Singapore (UTC+8)' },
-    { id: 'Asia/Bangkok',   label: 'Asia/Bangkok (UTC+7)' },
-    { id: 'Asia/Seoul',     label: 'Asia/Seoul (UTC+9)' },
-  ] },
-  { region: 'EUROPE', zones: [
-    { id: 'Europe/London',  label: 'Europe/London (UTC+0)' },
-    { id: 'Europe/Paris',   label: 'Europe/Paris (UTC+1)' },
-    { id: 'Europe/Berlin',  label: 'Europe/Berlin (UTC+1)' },
-    { id: 'Europe/Moscow',  label: 'Europe/Moscow (UTC+3)' },
-  ] },
-  { region: 'AMERICA', zones: [
-    { id: 'America/New_York',    label: 'America/New_York (UTC-5)' },
-    { id: 'America/Chicago',     label: 'America/Chicago (UTC-6)' },
-    { id: 'America/Denver',      label: 'America/Denver (UTC-7)' },
-    { id: 'America/Los_Angeles', label: 'America/Los_Angeles (UTC-8)' },
-  ] },
-  { region: 'PACIFIC', zones: [
-    { id: 'Australia/Sydney',  label: 'Australia/Sydney (UTC+11)' },
-    { id: 'Pacific/Auckland',  label: 'Pacific/Auckland (UTC+13)' },
-  ] },
-];
+function getUTCOffset(tz) {
+  const formatter = new Intl.DateTimeFormat('en', {
+    timeZone: tz,
+    timeZoneName: 'shortOffset',
+  });
+  const parts = formatter.formatToParts(new Date());
+  const offset = parts.find((p) => p.type === 'timeZoneName')?.value || 'UTC';
+  return offset.replace('GMT', 'UTC');
+}
+
+function parseOffsetMinutes(offsetStr) {
+  const match = offsetStr.match(/UTC([+-])(\d+)(?::(\d+))?/);
+  if (!match) return 0;
+  const sign = match[1] === '+' ? 1 : -1;
+  return sign * (parseInt(match[2], 10) * 60 + parseInt(match[3] ?? '0', 10));
+}
+
+function getTzRegion(tz) {
+  const prefix = tz.split('/')[0].toUpperCase();
+  const known = ['AFRICA', 'AMERICA', 'ASIA', 'ATLANTIC', 'AUSTRALIA', 'EUROPE', 'PACIFIC'];
+  return known.includes(prefix) ? prefix : 'OTHER';
+}
+
+const REGION_ORDER = ['AFRICA', 'AMERICA', 'ASIA', 'ATLANTIC', 'AUSTRALIA', 'EUROPE', 'PACIFIC', 'OTHER'];
+
+const TIMEZONES = (() => {
+  const allZones = Intl.supportedValuesOf('timeZone').map((tz) => {
+    const offsetStr = getUTCOffset(tz);
+    return { id: tz, label: `${tz} (${offsetStr})`, region: getTzRegion(tz), offsetMinutes: parseOffsetMinutes(offsetStr) };
+  });
+
+  allZones.sort((a, b) =>
+    a.offsetMinutes !== b.offsetMinutes
+      ? a.offsetMinutes - b.offsetMinutes
+      : a.id.localeCompare(b.id),
+  );
+
+  const groups = {};
+  for (const zone of allZones) {
+    (groups[zone.region] ??= []).push(zone);
+  }
+
+  return REGION_ORDER.filter((r) => groups[r]).map((r) => ({ region: r, zones: groups[r] }));
+})();
 
 const CUTOFF_OPTIONS = [15, 30, 45, 60];
+
+// ── 12-hour ↔ 24-hour conversion helpers ──────────────────────────────────────
+
+function parse24h(val) {
+  if (!val) return { hour: '', minute: '', ampm: 'AM' };
+  const [hh, mm] = val.split(':').map(Number);
+  const ampm = hh < 12 ? 'AM' : 'PM';
+  const h12  = hh % 12 === 0 ? 12 : hh % 12;
+  return { hour: String(h12).padStart(2, '0'), minute: String(mm).padStart(2, '0'), ampm };
+}
+
+function build24h(hour, minute, ampm) {
+  if (!hour || !minute) return '';
+  let h = Number(hour);
+  if (ampm === 'AM' && h === 12) h = 0;
+  if (ampm === 'PM' && h !== 12) h += 12;
+  return `${String(h).padStart(2, '0')}:${minute}`;
+}
+
+const HOURS   = ['01','02','03','04','05','06','07','08','09','10','11','12'];
+const MINUTES = ['00','15','30','45'];
+
+function CutoffTimePicker({ value, onChange }) {
+  const { hour: h0, minute: m0, ampm: ap0 } = parse24h(value);
+  const [hour,   setHour]   = useState(h0);
+  const [minute, setMinute] = useState(m0);
+  const [ampm,   setAmpm]   = useState(ap0);
+
+  const update = (field, val) => {
+    const next = { hour, minute, ampm, [field]: val };
+    if (field === 'hour')   setHour(val);
+    if (field === 'minute') setMinute(val);
+    if (field === 'ampm')   setAmpm(val);
+    onChange(build24h(next.hour, next.minute, next.ampm));
+  };
+
+  const selectSx = { fontSize: 13 };
+
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+      <Select size="small" value={hour} displayEmpty
+        onChange={(e) => update('hour', e.target.value)}
+        renderValue={(v) => v || '–'}
+        sx={{ width: 62, ...selectSx }}
+      >
+        {HOURS.map((h) => <MenuItem key={h} value={h} sx={selectSx}>{h}</MenuItem>)}
+      </Select>
+
+      <Typography sx={{ color: 'text.secondary', fontWeight: 600, lineHeight: 1, mx: 0.25 }}>:</Typography>
+
+      <Select size="small" value={minute} displayEmpty
+        onChange={(e) => update('minute', e.target.value)}
+        renderValue={(v) => v || '–'}
+        sx={{ width: 62, ...selectSx }}
+      >
+        {MINUTES.map((m) => <MenuItem key={m} value={m} sx={selectSx}>{m}</MenuItem>)}
+      </Select>
+
+      <Select size="small" value={ampm}
+        onChange={(e) => update('ampm', e.target.value)}
+        sx={{ width: 70, ...selectSx }}
+      >
+        <MenuItem value="AM" sx={selectSx}>AM</MenuItem>
+        <MenuItem value="PM" sx={selectSx}>PM</MenuItem>
+      </Select>
+    </Box>
+  );
+}
 
 function SectionHeader({ title, subtitle }) {
   return (
@@ -178,7 +262,8 @@ export default function SettingsPage() {
           subtitle="Categories of meals served. Each has its own daily cutoff for member toggles."
         />
 
-        <Stack spacing={0} sx={{ mb: 2 }}>
+        <Box sx={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', mb: 2 }}>
+          <Stack spacing={0}>
           {(settings.mealTypes ?? []).length === 0 && (
             <Typography color="text.secondary" fontSize={14} sx={{ py: 2 }}>
               No meal types added yet
@@ -190,6 +275,7 @@ export default function SettingsPage() {
               sx={{
                 display: 'flex', alignItems: 'center', gap: 1.5,
                 py: 1.25, borderBottom: '1px solid', borderColor: 'divider',
+                minWidth: 480,
               }}
             >
               <Box sx={{
@@ -203,13 +289,9 @@ export default function SettingsPage() {
 
               <Typography color="text.secondary" sx={{ fontSize: 12 }}>cutoff</Typography>
 
-              <TextField
-                type="time"
-                size="small"
+              <CutoffTimePicker
                 value={mt.cutoffTime ?? ''}
-                onChange={(e) => updateMealTypeCutoff(mt.name, e.target.value)}
-                sx={{ width: 130 }}
-                inputProps={{ step: 60 }}
+                onChange={(v) => updateMealTypeCutoff(mt.name, v)}
               />
 
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -229,7 +311,8 @@ export default function SettingsPage() {
               </IconButton>
             </Box>
           ))}
-        </Stack>
+          </Stack>
+        </Box>
 
         <Stack direction="row" spacing={1} sx={{ mb: 4 }}>
           <TextField
@@ -245,7 +328,36 @@ export default function SettingsPage() {
 
         <Divider sx={{ mb: 4 }} />
 
-        {/* ── Section 2: Timezone ──────────────────────────────────────── */}
+        {/* ── Section 2: Guest Meal Limit ──────────────────────────────── */}
+        <SectionHeader
+          title="Guest meal limit"
+          subtitle="Max guest meals allowed per user each month."
+        />
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
+          <IconButton
+            onClick={() => setSettings((s) => ({
+              ...s, guestMealMonthlyLimit: Math.max(0, (s.guestMealMonthlyLimit ?? 5) - 1),
+            }))}
+          >
+            <RemoveIcon />
+          </IconButton>
+          <Typography sx={{ minWidth: 32, textAlign: 'center', fontSize: 18, fontWeight: 500 }}>
+            {settings.guestMealMonthlyLimit ?? 5}
+          </Typography>
+          <IconButton
+            onClick={() => setSettings((s) => ({
+              ...s, guestMealMonthlyLimit: (s.guestMealMonthlyLimit ?? 5) + 1,
+            }))}
+          >
+            <AddIcon />
+          </IconButton>
+          <Typography color="text.secondary" fontSize={14}>meals / member / month</Typography>
+        </Box>
+
+        <Divider sx={{ mb: 4 }} />
+
+        {/* ── Section 3: Timezone ──────────────────────────────────────── */}
         <SectionHeader
           title="Timezone"
           subtitle="All cutoff times and reports follow this timezone."
@@ -284,12 +396,12 @@ export default function SettingsPage() {
             }}>
               {filteredTimezones.map((group) => (
                 <Box key={group.region}>
-                  <Typography sx={{
+                  <ListSubheader component="div" disableSticky sx={{
                     fontSize: 11, fontWeight: 700, letterSpacing: 0.8,
-                    color: 'text.secondary', px: 2, pt: 1.5, pb: 0.5,
+                    color: 'text.secondary', lineHeight: 1, px: 2, pt: 1.5, pb: 0.5,
                   }}>
                     {group.region}
-                  </Typography>
+                  </ListSubheader>
                   {group.zones.map((z) => {
                     const selected = settings.timezone === z.id;
                     return (
@@ -327,35 +439,6 @@ export default function SettingsPage() {
             </Box>
           </Box>
         )}
-
-        <Divider sx={{ mb: 4 }} />
-
-        {/* ── Section 3: Guest Meal Limit ──────────────────────────────── */}
-        <SectionHeader
-          title="Guest meal limit"
-          subtitle="Max guest meals allowed per user each month."
-        />
-
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
-          <IconButton
-            onClick={() => setSettings((s) => ({
-              ...s, guestMealMonthlyLimit: Math.max(0, (s.guestMealMonthlyLimit ?? 5) - 1),
-            }))}
-          >
-            <RemoveIcon />
-          </IconButton>
-          <Typography sx={{ minWidth: 32, textAlign: 'center', fontSize: 18, fontWeight: 500 }}>
-            {settings.guestMealMonthlyLimit ?? 5}
-          </Typography>
-          <IconButton
-            onClick={() => setSettings((s) => ({
-              ...s, guestMealMonthlyLimit: (s.guestMealMonthlyLimit ?? 5) + 1,
-            }))}
-          >
-            <AddIcon />
-          </IconButton>
-          <Typography color="text.secondary" fontSize={14}>meals / member / month</Typography>
-        </Box>
 
         <Divider sx={{ mb: 4 }} />
 
