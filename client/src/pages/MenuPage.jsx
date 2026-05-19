@@ -5,18 +5,23 @@ import api from '../api/axios';
 import { useTopbar } from '../context/TopbarContext';
 import { getBadge } from '../utils/badgeStyles';
 
+function localDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 function getWeekDates() {
   const today = new Date();
   const dow = today.getDay(); // 0=Sun
   const monday = new Date(today); monday.setDate(today.getDate() - ((dow + 6) % 7));
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(monday); d.setDate(monday.getDate() + i);
-    return d.toISOString().split('T')[0];
+    return localDateStr(d);
   });
 }
 
-function toDateStr(dateStr) {
-  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+// Normalise server keys (e.g. "Breakfast") to lowercase so lookups always match
+function normaliseMenus(raw) {
+  return Object.fromEntries(Object.entries(raw).map(([k, v]) => [k.toLowerCase(), v]));
 }
 
 const MEAL_ORDER = ['breakfast', 'lunch', 'dinner'];
@@ -29,7 +34,7 @@ export default function MenuPage() {
   const { setTopbar } = useTopbar();
 
   const weekDates = getWeekDates();
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = localDateStr(new Date());
 
   const [weekMenus, setWeekMenus] = useState({});
   const [loading, setLoading] = useState(true);
@@ -44,7 +49,7 @@ export default function MenuPage() {
     setLoading(true);
     Promise.all(weekDates.map((date) =>
       api.get(`/menus/${date}`)
-        .then((r) => ({ date, menus: r.data.menus ?? {} }))
+        .then((r) => ({ date, menus: normaliseMenus(r.data.menus ?? {}) }))
         .catch(() => ({ date, menus: {} })),
     )).then((results) => {
       setWeekMenus(Object.fromEntries(results.map((r) => [r.date, r.menus])));

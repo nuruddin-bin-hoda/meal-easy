@@ -9,11 +9,12 @@ import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import { useTopbar } from '../context/TopbarContext';
 
-function getLocalDateString() {
-  const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, '0');
-  const dd = String(today.getDate()).padStart(2, '0');
+function getLocalDateString(daysOffset = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() + daysOffset);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}`;
 }
 
@@ -57,7 +58,7 @@ function ChipInput({ mealType, items, inputValue, onAdd, onDelete, onInputChange
 export default function SetMenuPage() {
   const { t } = useTranslation();
   const { setTopbar } = useTopbar();
-  const [date, setDate] = useState(getLocalDateString);
+  const [date, setDate] = useState(() => getLocalDateString(1));
 
   useEffect(() => {
     setTopbar({ title: t('nav.setMenu'), subtitle: 'Admin' });

@@ -24,6 +24,7 @@ import {
   GridView as DashboardIcon,
   MoreHoriz as MoreIcon,
   Close as CloseIcon,
+  RestaurantMenu as SetMenuIcon,
 } from '@mui/icons-material';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -61,7 +62,7 @@ const NAV_ADMIN = [
   { path: '/users',      label: 'nav.users',       Icon: UsersIcon     },
   { path: '/meals',      label: 'nav.meals',       Icon: MealsIcon     },
   { path: '/menu',       label: 'nav.menu',        Icon: MenuBookIcon  },
-  { path: '/menu/set',   label: 'nav.setMenu',     Icon: MenuBookIcon  },
+  { path: '/set-menu',   label: 'nav.setMenu',     Icon: SetMenuIcon   },
   { path: '/purchases',  label: 'nav.purchases',   Icon: PurchasesIcon },
   { path: '/costs',      label: 'nav.costs',       Icon: CostsIcon     },
   { path: '/deposits',   label: 'nav.deposits',    Icon: DepositsIcon  },
