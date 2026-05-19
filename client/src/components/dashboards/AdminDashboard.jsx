@@ -268,18 +268,6 @@ export default function AdminDashboard() {
             {formattedDate}
           </Typography>
         </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Box component="span" sx={{
-            fontSize: 11, px: '10px', py: '4px', borderRadius: '999px',
-            bgcolor: tok.soft, color: tok.muted,
-            border: `1px solid ${tok.hairline}`, letterSpacing: '0.04em',
-          }}>
-            {user?.role === 'superadmin' ? 'Superadmin' : 'Admin'}
-          </Box>
-          <Avatar sx={{ width: 32, height: 32, bgcolor: tok.ink, color: tok.bg, fontSize: 12, fontWeight: 500 }}>
-            {getInitials(user?.name)}
-          </Avatar>
-        </Box>
       </Box>
 
       {/* ── KPI row (4 tiles) ────────────────────────────────────────────── */}

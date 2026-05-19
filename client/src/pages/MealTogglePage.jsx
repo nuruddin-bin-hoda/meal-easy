@@ -12,6 +12,14 @@ import { useTopbar } from '../context/TopbarContext';
 const fmt = (n) => `৳${Number(n ?? 0).toFixed(2)}`;
 const ROMAN = ['I', 'II', 'III', 'IV', 'V'];
 
+const formatCutoff = (time) => {
+  if (!time) return '';
+  const [h, m] = time.split(':').map(Number);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hour = h % 12 || 12;
+  return `${hour}:${m.toString().padStart(2, '0')} ${period}`;
+};
+
 function MealToggle({ on, disabled, onChange }) {
   const theme = useTheme();
   const tok = theme.tokens;
@@ -39,39 +47,41 @@ function MealToggle({ on, disabled, onChange }) {
   );
 }
 
+const stepBtnSx = (tok) => ({
+  width: 24, height: 24, borderRadius: '6px',
+  bgcolor: tok.soft, color: tok.muted,
+  border: `1px solid ${tok.hairline}`,
+  fontSize: 16, fontFamily: 'inherit', cursor: 'pointer', p: 0, lineHeight: 1,
+  '&:disabled': { opacity: 0.4, cursor: 'default' },
+  display: 'grid', placeItems: 'center',
+});
+
 function GuestStepper({ value, disabled, onStep, tok }) {
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-      {[-1, +1].map((delta) => (
-        <Box
-          key={delta}
-          component="button"
-          onClick={() => onStep(delta)}
-          disabled={disabled || (delta < 0 && value === 0)}
-          sx={{
-            width: 24, height: 24, borderRadius: '6px',
-            bgcolor: tok.soft, color: tok.muted,
-            border: `1px solid ${tok.hairline}`,
-            fontSize: 16, fontFamily: 'inherit', cursor: 'pointer', p: 0, lineHeight: 1,
-            '&:disabled': { opacity: 0.4, cursor: 'default' },
-            display: 'grid', placeItems: 'center',
-          }}
-        >
-          {delta < 0 ? '−' : '+'}
-        </Box>
-      )).reduce((acc, el, i) => {
-        if (i === 0) return [el,
-          <Box key="val" sx={{
-            minWidth: 30, textAlign: 'center', fontSize: 12, fontWeight: 500,
-            fontVariantNumeric: 'tabular-nums', color: tok.ink,
-          }}>
-            <Box component="span" sx={{ fontSize: 10, color: tok.muted, mr: '3px' }}>+</Box>
-            {value}
-          </Box>,
-          el,
-        ];
-        return acc;
-      })}
+      <Box
+        component="button"
+        onClick={() => onStep(-1)}
+        disabled={disabled || value === 0}
+        sx={stepBtnSx(tok)}
+      >
+        −
+      </Box>
+      <Box sx={{
+        minWidth: 30, textAlign: 'center', fontSize: 12, fontWeight: 500,
+        fontVariantNumeric: 'tabular-nums', color: tok.ink,
+      }}>
+        <Box component="span" sx={{ fontSize: 10, color: tok.muted, mr: '3px' }}>+</Box>
+        {value}
+      </Box>
+      <Box
+        component="button"
+        onClick={() => onStep(+1)}
+        disabled={disabled}
+        sx={stepBtnSx(tok)}
+      >
+        +
+      </Box>
     </Box>
   );
 }
@@ -89,6 +99,7 @@ export default function MealTogglePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState({});
   const [lastSaved, setLastSaved] = useState(false);
+  const [predictedRate, setPredictedRate] = useState(null);
   const debounceRef = useRef({});
 
   useEffect(() => {
@@ -107,6 +118,9 @@ export default function MealTogglePage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+    api.get('/dashboard/user')
+      .then((res) => setPredictedRate(res.data.predictedMealRate ?? null))
+      .catch(() => {});
   }, [t]);
 
   const save = useCallback(async (mealType, isOn, guestCount) => {
@@ -140,29 +154,32 @@ export default function MealTogglePage() {
   const pad = { xs: '16px', md: '28px' };
 
   const summaryCard = (
-    <Box sx={{ bgcolor: tok.surface, border: `1px solid ${tok.hairline}`, borderRadius: '12px', p: '16px 18px' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <Box sx={{ width: 4, height: 36, borderRadius: '2px', bgcolor: tok.accent, flexShrink: 0 }} />
-        <Box sx={{ flex: 1 }}>
-          <Typography sx={{ fontSize: 11, color: tok.muted, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500 }}>
-            {t('dashboard.yourTomorrow')}
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: '10px', mt: '4px' }}>
-            <Typography sx={{ fontSize: 24, fontWeight: 500, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: tok.ink }}>
-              Planned
-            </Typography>
-            <Typography sx={{ fontSize: 12, color: tok.muted }}>{mealOnCount} meals · {guestTotal} guests</Typography>
-          </Box>
+    <Box sx={{ bgcolor: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '12px', p: '16px 18px' }}>
+      <Typography sx={{ fontSize: 13, fontWeight: 600, color: tok.ink, mb: '12px' }}>
+        Tomorrow's Summary
+      </Typography>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography sx={{ fontSize: 13, color: tok.muted }}>Meals scheduled</Typography>
+          <Typography sx={{ fontSize: 13, fontWeight: 500, color: tok.ink, fontVariantNumeric: 'tabular-nums' }}>{mealOnCount}</Typography>
         </Box>
-      </Box>
-      <Box sx={{ mt: '10px', pt: '10px', borderTop: `1px solid ${tok.hairlineSoft}`, display: 'flex', justifyContent: 'space-between', fontSize: 11, color: tok.muted }}>
-        <span>{t('dashboard.rateRunning')}</span>
-        {lastSaved && (
-          <Typography sx={{ fontSize: 11, color: tok.posInk, fontWeight: 500, display: 'flex', alignItems: 'center', gap: '3px' }}>
-            <CheckIcon sx={{ fontSize: 11 }} /> {t('dashboard.autoSaved')}
-          </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography sx={{ fontSize: 13, color: tok.muted }}>Guest meals</Typography>
+          <Typography sx={{ fontSize: 13, fontWeight: 500, color: tok.ink, fontVariantNumeric: 'tabular-nums' }}>{guestTotal}</Typography>
+        </Box>
+        {predictedRate != null && (
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography sx={{ fontSize: 13, color: tok.muted }}>Predicted rate</Typography>
+            <Typography sx={{ fontSize: 13, fontWeight: 500, color: tok.ink, fontVariantNumeric: 'tabular-nums' }}>{fmt(predictedRate)}</Typography>
+          </Box>
         )}
       </Box>
+      {lastSaved && (
+        <Box sx={{ mt: '10px', pt: '10px', borderTop: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <CheckIcon sx={{ fontSize: 11, color: tok.posInk }} />
+          <Typography sx={{ fontSize: 11, color: tok.posInk, fontWeight: 500 }}>{t('dashboard.autoSaved')}</Typography>
+        </Box>
+      )}
     </Box>
   );
 
@@ -175,14 +192,6 @@ export default function MealTogglePage() {
         gap: '14px',
       }}>
         <Box>
-          {/* Cutoff hint */}
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: '12px' }}>
-            <Typography sx={{ fontSize: 12, color: tok.muted }}>
-              <Box component="span" sx={{ color: tok.warnInk, fontWeight: 500 }}>—</Box>
-              {' '}{t('meal.cutoffsDiffer')}
-            </Typography>
-          </Box>
-
           {user?.mealBlocked && (
             <Alert severity="error" sx={{ mb: 2 }}>{t('dashboard.mealBlocked')}</Alert>
           )}
@@ -221,13 +230,13 @@ export default function MealTogglePage() {
                           </Typography>
                           {toggle.cutoffTime && (
                             <Typography sx={{ fontSize: 11, color: tok.muted, fontVariantNumeric: 'tabular-nums' }}>
-                              {toggle.cutoffTime}
+                              {formatCutoff(toggle.cutoffTime)}
                             </Typography>
                           )}
                         </Box>
                         {toggle.cutoffTime && !isLocked && (
                           <Typography sx={{ fontSize: 11, color: tok.dim, mt: '3px' }}>
-                            {t('meal.closesTomorrow', { time: toggle.cutoffTime })}
+                            {t('meal.closesTomorrow', { time: formatCutoff(toggle.cutoffTime) })}
                           </Typography>
                         )}
                         {items.length > 0 && (
@@ -274,14 +283,6 @@ export default function MealTogglePage() {
         {/* Desktop side rail */}
         <Box sx={{ display: { xs: 'none', md: 'flex' }, flexDirection: 'column', gap: '12px', alignSelf: 'flex-start', position: 'sticky', top: 0 }}>
           {summaryCard}
-          <Box sx={{ bgcolor: tok.surface, border: `1px solid ${tok.hairline}`, borderRadius: '12px', p: '14px 16px' }}>
-            <Typography sx={{ fontSize: 11, color: tok.muted, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500 }}>
-              {t('dashboard.headsUp')}
-            </Typography>
-            <Typography sx={{ fontSize: 13, mt: '6px', lineHeight: 1.5, color: tok.ink }}>
-              {t('meal.cutoffsDiffer')}
-            </Typography>
-          </Box>
         </Box>
       </Box>
     </Box>
