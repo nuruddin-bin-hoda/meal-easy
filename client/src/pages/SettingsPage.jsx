@@ -97,16 +97,16 @@ function CutoffTimePicker({ value, onChange }) {
     onChange(build24h(next.hour, next.minute, next.ampm));
   };
 
-  const selectSx = { fontSize: 13 };
+  const selectSx = { fontSize: 13, '& .MuiSelect-select': { paddingRight: '24px !important' } };
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
       <Select size="small" value={hour} displayEmpty
         onChange={(e) => update('hour', e.target.value)}
         renderValue={(v) => v || '–'}
-        sx={{ width: 62, ...selectSx }}
+        sx={{ minWidth: 56, ...selectSx }}
       >
-        {HOURS.map((h) => <MenuItem key={h} value={h} sx={selectSx}>{h}</MenuItem>)}
+        {HOURS.map((h) => <MenuItem key={h} value={h} sx={{ fontSize: 13 }}>{h}</MenuItem>)}
       </Select>
 
       <Typography sx={{ color: 'text.secondary', fontWeight: 600, lineHeight: 1, mx: 0.25 }}>:</Typography>
@@ -114,17 +114,17 @@ function CutoffTimePicker({ value, onChange }) {
       <Select size="small" value={minute} displayEmpty
         onChange={(e) => update('minute', e.target.value)}
         renderValue={(v) => v || '–'}
-        sx={{ width: 62, ...selectSx }}
+        sx={{ minWidth: 56, ...selectSx }}
       >
-        {MINUTES.map((m) => <MenuItem key={m} value={m} sx={selectSx}>{m}</MenuItem>)}
+        {MINUTES.map((m) => <MenuItem key={m} value={m} sx={{ fontSize: 13 }}>{m}</MenuItem>)}
       </Select>
 
       <Select size="small" value={ampm}
         onChange={(e) => update('ampm', e.target.value)}
-        sx={{ width: 70, ...selectSx }}
+        sx={{ minWidth: 64, ...selectSx }}
       >
-        <MenuItem value="AM" sx={selectSx}>AM</MenuItem>
-        <MenuItem value="PM" sx={selectSx}>PM</MenuItem>
+        <MenuItem value="AM" sx={{ fontSize: 13 }}>AM</MenuItem>
+        <MenuItem value="PM" sx={{ fontSize: 13 }}>PM</MenuItem>
       </Select>
     </Box>
   );
