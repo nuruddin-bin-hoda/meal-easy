@@ -88,7 +88,7 @@ export default function AdminsPage() {
     setActioning(target._id);
     try {
       const res = await api.patch(`/admins/${target._id}/downgrade`);
-      if (res.data.roleChanged && target._id === user?._id) {
+      if (res.data.roleChanged && target._id.toString() === user?._id?.toString()) {
         await logout();
         navigate('/login', { replace: true, state: { message: 'Your role has changed. Please log in again.' } });
         return;
@@ -110,7 +110,7 @@ export default function AdminsPage() {
     setActioning(target._id);
     try {
       const res = await api.patch(`/admins/${target._id}/promote`);
-      if (res.data.roleChanged && target._id === user?._id) {
+      if (res.data.roleChanged && target._id.toString() === user?._id?.toString()) {
         await logout();
         navigate('/login', { replace: true, state: { message: 'Your role has changed. Please log in again.' } });
         return;

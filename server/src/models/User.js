@@ -17,6 +17,7 @@ const userSchema = new mongoose.Schema({
   },
   passwordHash: { type: String, required: true },
   mealBlocked: { type: Boolean, default: false },
+  tokenVersion: { type: Number, default: 0 },
   deletedAt: Date,
 }, { timestamps: true });
 

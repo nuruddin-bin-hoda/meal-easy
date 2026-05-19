@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import api from '../api/axios';
+import api, { setLoggingOut } from '../api/axios';
 
 const AuthContext = createContext(null);
 
@@ -49,6 +49,7 @@ export function AuthProvider({ children }) {
   }, [user?._id]);
 
   const login = async (userData) => {
+    setLoggingOut(false);
     try {
       const res = await api.get('/auth/me');
       setUser(res.data);
@@ -58,10 +59,12 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
+    setLoggingOut(true);
+    setUser(null);     // unmount UI immediately — stops NotificationBell's interval
     try {
       await api.post('/auth/logout');
-    } finally {
-      setUser(null);
+    } catch {
+      // cookie cleared server-side regardless; safe to ignore errors
     }
   };
 

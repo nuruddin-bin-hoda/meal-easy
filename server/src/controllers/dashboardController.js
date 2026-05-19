@@ -10,7 +10,7 @@ const { getCurrentBillingMonth, isCutoffPassed, getTodayDateString, getTomorrowD
 
 const getAdminDashboard = async (req, res) => {
   const settings = await MessSettings.findOne();
-  const timezone = settings?.timezone ?? 'Asia/Dhaka';
+  const timezone = settings?.timezone || 'UTC';
 
   const currentMonth = getCurrentBillingMonth(timezone);
   const todayStr = getTodayDateString(timezone);
@@ -154,7 +154,7 @@ const getUserDashboard = async (req, res) => {
   const userId = req.user.userId;
 
   const settings = await MessSettings.findOne();
-  const timezone = settings?.timezone ?? 'Asia/Dhaka';
+  const timezone = settings?.timezone || 'UTC';
 
   const currentMonth = getCurrentBillingMonth(timezone);
   const todayStr = getTodayDateString(timezone);
@@ -200,7 +200,7 @@ const getUserDashboard = async (req, res) => {
 
 const getChefDashboard = async (req, res) => {
   const settings = await MessSettings.findOne();
-  const timezone = settings?.timezone ?? 'Asia/Dhaka';
+  const timezone = settings?.timezone || 'UTC';
   const todayStr = getTodayDateString(timezone);
 
   const [todayMenuDocs, todayPortionAgg, stock] = await Promise.all([

@@ -30,7 +30,7 @@ router.post(
   login,
 );
 
-router.post('/logout', authenticate, logout);
+router.post('/logout', logout);
 
 router.get('/me', authenticate, getMe);
 

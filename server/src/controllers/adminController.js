@@ -1,5 +1,18 @@
+const jwt = require('jsonwebtoken');
 const { User, AuditLog } = require('../models');
+const { JWT_SECRET, JWT_EXPIRES_IN, NODE_ENV } = require('../config/env');
 const { sendPushToUser } = require('../utils/pushService');
+const { invalidateUserCache } = require('../middleware/authenticate');
+
+const COOKIE_OPTS = {
+  httpOnly: true,
+  sameSite: 'lax',
+  get secure() { return NODE_ENV === 'production' && process.env.SECURE_COOKIES === 'true'; },
+};
+
+function signToken(userId, role, tokenVersion) {
+  return jwt.sign({ userId, role, tokenVersion }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+}
 
 const promoteUser = async (req, res, next) => {
   try {
@@ -13,6 +26,16 @@ const promoteUser = async (req, res, next) => {
 
     user.role = 'admin';
     await user.save();
+    invalidateUserCache(user._id);
+
+    // Issue a new JWT reflecting the updated role so the affected user's next
+    // request is authorised immediately without requiring a manual re-login.
+    const newToken = signToken(user._id, user.role, user.tokenVersion ?? 0);
+
+    if (req.user.userId === user._id.toString()) {
+      // Rare edge-case: acting on own account — update the caller's cookie.
+      res.cookie('token', newToken, COOKIE_OPTS);
+    }
 
     await AuditLog.create({
       actorId:      req.user.userId,
@@ -25,7 +48,7 @@ const promoteUser = async (req, res, next) => {
 
     sendPushToUser(user._id, { title: 'Role Updated', body: 'Congratulations! You have been promoted to Admin.' }).catch(() => {});
 
-    res.json({ message: 'User promoted to admin.', user, roleChanged: true });
+    res.json({ message: 'User promoted to admin.', user, roleChanged: true, newToken });
   } catch (err) {
     next(err);
   }
@@ -45,7 +68,16 @@ const downgradeAdmin = async (req, res, next) => {
     }
 
     user.role = 'user';
+    // Increment tokenVersion to immediately invalidate the ex-admin's existing JWT.
+    user.tokenVersion = (user.tokenVersion ?? 0) + 1;
     await user.save();
+    invalidateUserCache(user._id);
+
+    const newToken = signToken(user._id, user.role, user.tokenVersion);
+
+    if (req.user.userId === user._id.toString()) {
+      res.cookie('token', newToken, COOKIE_OPTS);
+    }
 
     await AuditLog.create({
       actorId:      req.user.userId,
@@ -58,7 +90,7 @@ const downgradeAdmin = async (req, res, next) => {
 
     sendPushToUser(user._id, { title: 'Role Updated', body: 'Your account has been changed from Admin to User.' }).catch(() => {});
 
-    res.json({ message: 'Admin downgraded to user.', user, roleChanged: true });
+    res.json({ message: 'Admin downgraded to user.', user, roleChanged: true, newToken });
   } catch (err) {
     next(err);
   }

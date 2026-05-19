@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
 import {
   Box, TextField, Button, Typography, Alert, CircularProgress, useTheme,
   InputAdornment, IconButton,
@@ -25,10 +25,15 @@ function PlateMark({ size = 48, surfaceColor }) {
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const tok = theme.tokens;
   const { toggleMode, mode } = useColorMode();
+
+  const staleMessage = new URLSearchParams(location.search).get('reason') === 'session_stale'
+    ? 'Your account role has changed. Please log in again.'
+    : null;
 
   const [form, setForm] = useState({ phone: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
@@ -105,6 +110,10 @@ export default function LoginPage() {
             {t('auth.signInSubtitle')}
           </Typography>
         </Box>
+
+        {staleMessage && (
+          <Alert severity="info" sx={{ borderRadius: '8px' }}>{staleMessage}</Alert>
+        )}
 
         {/* Card */}
         <Box sx={{

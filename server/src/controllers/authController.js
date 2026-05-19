@@ -10,8 +10,8 @@ const COOKIE_OPTS = {
   get secure() { return NODE_ENV === 'production' && process.env.SECURE_COOKIES === 'true'; },
 };
 
-const signToken = (userId, role) =>
-  jwt.sign({ userId, role }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+const signToken = (userId, role, tokenVersion = 0) =>
+  jwt.sign({ userId, role, tokenVersion }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 
 // POST /api/v1/auth/register
 const register = async (req, res, next) => {
@@ -81,7 +81,7 @@ const login = async (req, res, next) => {
     const match = await bcrypt.compare(password, actor.passwordHash);
     if (!match) return res.status(401).json({ message: 'Invalid credentials.' });
 
-    const token = signToken(actor._id, actor.role);
+    const token = signToken(actor._id, actor.role, actor.tokenVersion ?? 0);
     res.cookie('token', token, COOKIE_OPTS);
     res.json({ user: { _id: actor._id, name: actor.name, role: actor.role, language: actor.language } });
   } catch (err) {
