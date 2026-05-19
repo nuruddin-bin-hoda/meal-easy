@@ -4,7 +4,7 @@ const getSettings = async (req, res, next) => {
   try {
     const settings = await MessSettings.findOneAndUpdate(
       {},
-      {},
+      { $setOnInsert: { mealTypes: [], timezone: null } },
       { upsert: true, new: true, setDefaultsOnInsert: true },
     );
     res.json(settings);
@@ -15,7 +15,10 @@ const getSettings = async (req, res, next) => {
 
 const updateSettings = async (req, res, next) => {
   try {
-    const allowed = ['timezone', 'cutoffReminderMinutes', 'guestMealMonthlyLimit', 'lowBalanceThreshold', 'mealTypes'];
+    const allowed = [
+      'timezone', 'cutoffReminderMinutes', 'guestMealMonthlyLimit', 'lowBalanceThreshold', 'mealTypes',
+      'lowBalanceAlertsEnabled', 'menuUpdateAlertsEnabled', 'monthlyReportAlertsEnabled',
+    ];
     const update = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) update[key] = req.body[key];

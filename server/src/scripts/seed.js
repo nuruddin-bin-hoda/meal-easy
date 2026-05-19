@@ -35,23 +35,13 @@ async function seed() {
     console.log(`Super Admin created  phone=${SUPERADMIN.phone}  password=${SUPERADMIN.password}`);
   }
 
-  // MessSettings singleton
+  // MessSettings singleton — created empty so admin configures via Settings page
   const settings = await MessSettings.findOne();
   if (settings) {
     console.log('MessSettings already exists — skipping.');
   } else {
-    await MessSettings.create({
-      timezone: 'Asia/Dhaka',
-      cutoffReminderMinutes: 30,
-      guestMealMonthlyLimit: 5,
-      lowBalanceThreshold: 100,
-      mealTypes: [
-        { name: 'Breakfast', isActive: true,  isAutoEnabled: false, cutoffTime: '22:00' },
-        { name: 'Lunch',     isActive: true,  isAutoEnabled: false, cutoffTime: '09:00' },
-        { name: 'Dinner',    isActive: true,  isAutoEnabled: false, cutoffTime: '15:00' },
-      ],
-    });
-    console.log('MessSettings created with defaults.');
+    await MessSettings.create({ mealTypes: [], timezone: null });
+    console.log('MessSettings created (empty — configure via Settings page).');
   }
 
   await mongoose.disconnect();

@@ -13,21 +13,11 @@ const errorHandler = require('./middleware/errorHandler');
 async function runStartupChecks() {
   const { MessSettings, User } = require('./models');
 
-  // Guarantee the MessSettings singleton exists.
+  // Guarantee the MessSettings singleton exists — created empty so admin configures via Settings page.
   const settings = await MessSettings.findOne();
   if (!settings) {
-    await MessSettings.create({
-      timezone: 'Asia/Dhaka',
-      cutoffReminderMinutes: 30,
-      guestMealMonthlyLimit: 5,
-      lowBalanceThreshold: 100,
-      mealTypes: [
-        { name: 'Breakfast', isActive: true,  isAutoEnabled: false, cutoffTime: '22:00' },
-        { name: 'Lunch',     isActive: true,  isAutoEnabled: false, cutoffTime: '09:00' },
-        { name: 'Dinner',    isActive: true,  isAutoEnabled: false, cutoffTime: '15:00' },
-      ],
-    });
-    console.log('[startup] MessSettings singleton created with defaults.');
+    await MessSettings.create({ mealTypes: [], timezone: null });
+    console.log('[startup] MessSettings singleton created (empty).');
   }
 
   // Warn if no superadmin exists — the app will work but no one can manage it.

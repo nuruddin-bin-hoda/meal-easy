@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  Avatar, Box, Drawer, IconButton, Tooltip, Typography,
+  Alert, Avatar, Box, Button, Drawer, IconButton, Tooltip, Typography,
   useMediaQuery, useTheme,
 } from '@mui/material';
 import {
@@ -165,10 +165,36 @@ export default function AppLayout({ children }) {
   const isMobile   = useMediaQuery(theme.breakpoints.down('md'));
 
   const [moreOpen, setMoreOpen] = useState(false);
+  const [settingsIncomplete, setSettingsIncomplete] = useState(false);
   const isDark = mode === 'dark';
 
   const role    = user?.role ?? 'user';
   const cfgRole = role === 'superadmin' ? 'admin' : role;
+
+  const isAdminRole = role === 'admin' || role === 'superadmin';
+
+  useEffect(() => {
+    if (!isAdminRole) return;
+    api.get('/settings').then((res) => {
+      const s = res.data;
+      setSettingsIncomplete(!s.mealTypes?.length || !s.timezone || !s.cutoffTime);
+    }).catch(() => {});
+  }, [isAdminRole]);
+
+  const settingsWarning = isAdminRole && settingsIncomplete ? (
+    <Alert
+      severity="warning"
+      sx={{ borderRadius: 0, flexShrink: 0 }}
+      action={
+        <Button color="inherit" size="small" component={Link} to="/settings">
+          Go to Settings
+        </Button>
+      }
+    >
+      Setup required — meal types, cutoff time, and timezone must be configured before the app is usable.
+    </Alert>
+  ) : null;
+
   const navItems = role === 'superadmin' ? NAV_SUPERADMIN : cfgRole === 'admin' ? NAV_ADMIN : cfgRole === 'chef' ? NAV_CHEF : NAV_USER;
   const tabs     = cfgRole === 'admin' ? TABS_ADMIN : cfgRole === 'chef' ? TABS_CHEF : TABS_USER;
 
@@ -448,6 +474,7 @@ export default function AppLayout({ children }) {
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', bgcolor: tok.bg }}>
         {mobileTopBar}
+        {settingsWarning}
         <Box component="main" sx={{ flex: 1, overflowY: 'auto' }}>
           {children}
         </Box>
@@ -462,6 +489,7 @@ export default function AppLayout({ children }) {
       {sidebarContent}
       <Box sx={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', bgcolor: tok.bg }}>
         {topbar}
+        {settingsWarning}
         <Box component="main" sx={{ flex: 1, overflowY: 'auto', bgcolor: tok.bg }}>
           {children}
         </Box>
