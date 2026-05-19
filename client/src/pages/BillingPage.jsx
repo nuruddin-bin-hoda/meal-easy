@@ -191,7 +191,15 @@ export default function BillingPage() {
               {!isLocked && (
                 <CardHeader
                   title={t('billing.previewNote')}
-                  titleTypographyProps={{ variant: 'subtitle1', color: 'text.secondary' }}
+                  titleTypographyProps={{
+                    sx: {
+                      fontSize: '0.875rem',
+                      fontWeight: 500,
+                      color: 'text.secondary',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                    },
+                  }}
                   sx={{ pb: 0 }}
                 />
               )}
@@ -199,7 +207,7 @@ export default function BillingPage() {
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell>{t('billing.userCol')}</TableCell>
+                    <TableCell align="left">{t('billing.userCol')}</TableCell>
                     <TableCell align="right">{t('billing.meals')}</TableCell>
                     <TableCell align="right">{t('billing.guestMeals')}</TableCell>
                     <TableCell align="right">{t('billing.mealCost')}</TableCell>
@@ -214,7 +222,7 @@ export default function BillingPage() {
                       : (users[row.userId?.toString()] ?? row.userId?.toString?.() ?? '—');
                     return (
                       <TableRow key={isLocked ? row._id : idx} hover>
-                        <TableCell>{name}</TableCell>
+                        <TableCell align="left">{name}</TableCell>
                         <TableCell align="right">{row.mealCount}</TableCell>
                         <TableCell align="right">{row.guestMealCount}</TableCell>
                         <TableCell align="right">৳{row.mealCost.toFixed(2)}</TableCell>

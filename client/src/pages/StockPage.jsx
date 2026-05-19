@@ -8,6 +8,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import EditIcon from '@mui/icons-material/Edit';
 import SettingsIcon from '@mui/icons-material/Settings';
 import UnarchiveIcon from '@mui/icons-material/Unarchive';
 import { useTranslation } from 'react-i18next';
@@ -178,14 +179,14 @@ export default function StockPage() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-        <Typography variant="h5" fontWeight={700}>{t('stock.title')}</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h5" fontWeight={500}>{t('stock.title')}</Typography>
         {isAdmin && view === 'active' && (
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => setAddOpen(true)}>
             {t('stock.addItem')}
           </Button>
         )}
-      </Stack>
+      </Box>
 
       <ToggleButtonGroup
         value={view}
@@ -202,7 +203,8 @@ export default function StockPage() {
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 6 }}><CircularProgress /></Box>
       ) : view === 'active' ? (
-        <Table size="small">
+        <Box sx={{ overflowX: 'auto', width: '100%' }}>
+        <Table size="small" sx={{ minWidth: 600 }}>
           <TableHead>
             <TableRow>
               <TableCell>{t('common.name')}</TableCell>
@@ -250,13 +252,22 @@ export default function StockPage() {
                     <Box
                       onClick={() => canEdit && startEdit(item)}
                       sx={{
-                        display: 'inline-block',
-                        px: 1, py: 0.25, borderRadius: 1,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                        px: 1.5,
+                        py: 0.5,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        borderRadius: 1,
                         cursor: canEdit ? 'pointer' : 'default',
-                        '&:hover': canEdit ? { bgcolor: 'action.hover' } : {},
+                        minWidth: 70,
+                        justifyContent: 'space-between',
+                        '&:hover': canEdit ? { borderColor: 'primary.main' } : {},
                       }}
                     >
-                      {item.quantity}
+                      <Typography fontSize={14}>{item.quantity}</Typography>
+                      {canEdit && <EditIcon sx={{ fontSize: 12, color: 'text.secondary' }} />}
                     </Box>
                   )}
                 </TableCell>
@@ -272,7 +283,7 @@ export default function StockPage() {
 
                 {isAdmin && (
                   <TableCell align="center">
-                    <Stack direction="row" spacing={0.5} justifyContent="center">
+                    <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', alignItems: 'center' }}>
                       <IconButton size="small" onClick={() => openSettings(item)}>
                         <SettingsIcon fontSize="small" />
                       </IconButton>
@@ -282,15 +293,17 @@ export default function StockPage() {
                       <IconButton size="small" color="error" onClick={() => handlePermanentDelete(item._id, item.itemName)}>
                         <DeleteForeverIcon fontSize="small" />
                       </IconButton>
-                    </Stack>
+                    </Box>
                   </TableCell>
                 )}
               </TableRow>
             ))}
           </TableBody>
         </Table>
+        </Box>
       ) : (
-        <Table size="small">
+        <Box sx={{ overflowX: 'auto', width: '100%' }}>
+        <Table size="small" sx={{ minWidth: 600 }}>
           <TableHead>
             <TableRow>
               <TableCell>{t('common.name')}</TableCell>
@@ -329,6 +342,7 @@ export default function StockPage() {
             ))}
           </TableBody>
         </Table>
+        </Box>
       )}
 
       {/* Add item dialog */}
