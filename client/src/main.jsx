@@ -8,6 +8,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeContextProvider, useColorMode } from './context/ThemeContext';
 import { TopbarProvider } from './context/TopbarContext';
+import { SettingsProvider } from './context/SettingsContext';
 import { lightTheme, darkTheme } from './theme';
 import './i18n/index.js';
 import App from './App.jsx';
@@ -25,8 +26,10 @@ function AppWithTheme() {
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         <AuthProvider>
           <TopbarProvider>
-            <CssBaseline />
-            <App />
+            <SettingsProvider>
+              <CssBaseline />
+              <App />
+            </SettingsProvider>
           </TopbarProvider>
         </AuthProvider>
       </LocalizationProvider>

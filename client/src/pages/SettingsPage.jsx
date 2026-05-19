@@ -13,6 +13,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import { useTopbar } from '../context/TopbarContext';
+import { useSettings } from '../context/SettingsContext';
 
 const TIMEZONES = [
   { region: 'ASIA', zones: [
@@ -57,6 +58,7 @@ function SectionHeader({ title, subtitle }) {
 export default function SettingsPage() {
   const { t } = useTranslation();
   const { setTopbar } = useTopbar();
+  const { refreshSettingsStatus } = useSettings();
 
   useEffect(() => {
     setTopbar({ title: t('nav.settings') });
@@ -94,6 +96,7 @@ export default function SettingsPage() {
         monthlyReportAlertsEnabled: settings.monthlyReportAlertsEnabled,
       });
       setSettings(res.data);
+      refreshSettingsStatus();
       notify('Settings saved');
     } catch (err) {
       notify(err.response?.data?.message ?? 'Failed to save', 'error');

@@ -32,6 +32,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { useColorMode } from '../../context/ThemeContext';
 import { useTopbar } from '../../context/TopbarContext';
+import { useSettings } from '../../context/SettingsContext';
 import NotificationBell from '../NotificationBell';
 import api from '../../api/axios';
 
@@ -165,7 +166,6 @@ export default function AppLayout({ children }) {
   const isMobile   = useMediaQuery(theme.breakpoints.down('md'));
 
   const [moreOpen, setMoreOpen] = useState(false);
-  const [settingsIncomplete, setSettingsIncomplete] = useState(false);
   const isDark = mode === 'dark';
 
   const role    = user?.role ?? 'user';
@@ -173,13 +173,11 @@ export default function AppLayout({ children }) {
 
   const isAdminRole = role === 'admin' || role === 'superadmin';
 
+  const { settingsIncomplete, refreshSettingsStatus } = useSettings();
+
   useEffect(() => {
-    if (!isAdminRole) return;
-    api.get('/settings').then((res) => {
-      const s = res.data;
-      setSettingsIncomplete(!s.mealTypes?.length || !s.timezone || !s.cutoffTime);
-    }).catch(() => {});
-  }, [isAdminRole]);
+    if (isAdminRole) refreshSettingsStatus();
+  }, [isAdminRole, refreshSettingsStatus]);
 
   const settingsWarning = isAdminRole && settingsIncomplete ? (
     <Alert
