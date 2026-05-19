@@ -97,7 +97,8 @@ export default function ChefsPage() {
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 6 }}><CircularProgress /></Box>
       ) : (
-        <Table size="small">
+        <Box sx={{ overflowX: 'auto', width: '100%' }}>
+        <Table size="small" sx={{ minWidth: 600 }}>
           <TableHead>
             <TableRow>
               <TableCell>{t('common.name')}</TableCell>
@@ -139,6 +140,7 @@ export default function ChefsPage() {
             ))}
           </TableBody>
         </Table>
+        </Box>
       )}
 
       <Dialog open={addOpen} onClose={() => setAddOpen(false)} maxWidth="sm" fullWidth>

@@ -236,7 +236,8 @@ export default function ChefProfilePage() {
           }
         />
         <Divider />
-        <Table size="small">
+        <Box sx={{ overflowX: 'auto', width: '100%' }}>
+        <Table size="small" sx={{ minWidth: 500 }}>
           <TableHead>
             <TableRow>
               <TableCell>{t('common.month')}</TableCell>
@@ -270,6 +271,7 @@ export default function ChefProfilePage() {
             ))}
           </TableBody>
         </Table>
+        </Box>
       </Card>
 
       {/* Bonus history */}
@@ -287,7 +289,8 @@ export default function ChefProfilePage() {
           }
         />
         <Divider />
-        <Table size="small">
+        <Box sx={{ overflowX: 'auto', width: '100%' }}>
+        <Table size="small" sx={{ minWidth: 400 }}>
           <TableHead>
             <TableRow>
               <TableCell>{t('common.date')}</TableCell>
@@ -311,6 +314,7 @@ export default function ChefProfilePage() {
             ))}
           </TableBody>
         </Table>
+        </Box>
       </Card>
 
       {/* Edit profile dialog */}

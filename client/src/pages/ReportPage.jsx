@@ -221,8 +221,8 @@ export default function ReportPage() {
               {data.mealAttendance.length === 0 ? (
                 <Typography variant="body2" color="text.secondary">{t('report.noAttendance')}</Typography>
               ) : (
-                <Box sx={{ overflowX: 'auto' }}>
-                  <Table size="small">
+                <Box sx={{ overflowX: 'auto', width: '100%' }}>
+                  <Table size="small" sx={{ minWidth: 600 }}>
                     <TableHead>
                       <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: 'action.hover' } }}>
                         <TableCell>{t('common.date')}</TableCell>
@@ -310,7 +310,8 @@ export default function ReportPage() {
                   {data.deposits.length === 0 ? (
                     <Typography variant="body2" color="text.secondary">{t('report.noDeposits')}</Typography>
                   ) : (
-                    <Table size="small">
+                    <Box sx={{ overflowX: 'auto', width: '100%' }}>
+                    <Table size="small" sx={{ minWidth: 400 }}>
                       <TableHead>
                         <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: 'action.hover' } }}>
                           <TableCell>{t('common.date')}</TableCell>
@@ -328,6 +329,7 @@ export default function ReportPage() {
                         ))}
                       </TableBody>
                     </Table>
+                    </Box>
                   )}
                 </CardContent>
               </Card>

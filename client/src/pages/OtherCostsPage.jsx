@@ -159,7 +159,8 @@ export default function OtherCostsPage() {
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}><CircularProgress /></Box>
       ) : (
         <Card elevation={2}>
-          <Table size="small">
+          <Box sx={{ overflowX: 'auto', width: '100%' }}>
+          <Table size="small" sx={{ minWidth: 400 }}>
             <TableHead>
               <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: 'action.hover' } }}>
                 <TableCell>{t('costs.description')}</TableCell>
@@ -204,6 +205,7 @@ export default function OtherCostsPage() {
               )}
             </TableBody>
           </Table>
+          </Box>
         </Card>
       )}
 

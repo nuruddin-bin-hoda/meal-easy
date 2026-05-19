@@ -344,10 +344,10 @@ export default function AdminDashboard() {
               {t('dashboard.noMealsToday')}
             </Typography>
           ) : (
-            <Box sx={{ display: 'grid', gridTemplateColumns: '1.4fr 0.8fr 0.8fr 0.8fr 0.8fr' }}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '30% 15% 15% 20% 20%' }}>
               {/* Header */}
               {[t('dashboard.menuCol'), t('dashboard.users'), t('dashboard.guests'), t('dashboard.totalPortions'), t('dashboard.cutoffCol')].map((h, i) => (
-                <Box key={h} sx={{ ...tblHeaderSx, textAlign: i > 0 ? 'right' : 'left' }}>
+                <Box key={h} sx={{ ...tblHeaderSx, textAlign: i === 0 ? 'left' : 'center', ...(i === 0 && { pr: 1 }) }}>
                   {h}
                 </Box>
               ))}
@@ -359,7 +359,7 @@ export default function AdminDashboard() {
                 const cellSx = { py: '10px', borderBottom: rowBorder, fontSize: 14 };
                 return [
                   /* Menu cell */
-                  <Box key={`${meal.mealType}-menu`} sx={cellSx}>
+                  <Box key={`${meal.mealType}-menu`} sx={{ ...cellSx, pr: 1 }}>
                     <Typography sx={{ fontWeight: 500, fontSize: 14, color: tok.ink, textTransform: 'capitalize' }}>
                       {meal.mealType}
                     </Typography>
@@ -370,15 +370,15 @@ export default function AdminDashboard() {
                     )}
                   </Box>,
                   /* Users */
-                  <Box key={`${meal.mealType}-u`} sx={{ ...cellSx, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: tok.ink }}>
+                  <Box key={`${meal.mealType}-u`} sx={{ ...cellSx, textAlign: 'center', fontVariantNumeric: 'tabular-nums', color: tok.ink }}>
                     {meal.userCount}
                   </Box>,
                   /* Guests */
-                  <Box key={`${meal.mealType}-g`} sx={{ ...cellSx, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: tok.ink }}>
+                  <Box key={`${meal.mealType}-g`} sx={{ ...cellSx, textAlign: 'center', fontVariantNumeric: 'tabular-nums', color: tok.ink }}>
                     {meal.guestCount}
                   </Box>,
                   /* Portions pill */
-                  <Box key={`${meal.mealType}-t`} sx={{ ...cellSx, textAlign: 'right' }}>
+                  <Box key={`${meal.mealType}-t`} sx={{ ...cellSx, textAlign: 'center' }}>
                     <Box component="span" sx={{
                       display: 'inline-block',
                       bgcolor: tok.infoBg, color: tok.infoInk,
@@ -389,7 +389,7 @@ export default function AdminDashboard() {
                     </Box>
                   </Box>,
                   /* Cutoff */
-                  <Box key={`${meal.mealType}-c`} sx={{ ...cellSx, textAlign: 'right', color: tok.muted, fontSize: 13 }}>
+                  <Box key={`${meal.mealType}-c`} sx={{ ...cellSx, textAlign: 'center', color: tok.muted, fontSize: 13 }}>
                     {meal.cutoffTime ? to12Hour(meal.cutoffTime) : '—'}
                   </Box>,
                 ];

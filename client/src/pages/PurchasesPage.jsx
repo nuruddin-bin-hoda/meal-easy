@@ -177,7 +177,8 @@ export default function PurchasesPage() {
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}><CircularProgress /></Box>
       ) : (
         <Card elevation={2}>
-          <Table size="small">
+          <Box sx={{ overflowX: 'auto', width: '100%' }}>
+          <Table size="small" sx={{ minWidth: 600 }}>
             <TableHead>
               <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: 'action.hover' } }}>
                 <TableCell>{t('purchases.date')}</TableCell>
@@ -217,6 +218,7 @@ export default function PurchasesPage() {
               )}
             </TableBody>
           </Table>
+          </Box>
         </Card>
       )}
 

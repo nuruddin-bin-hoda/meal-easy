@@ -140,8 +140,8 @@ export default function UsersPage() {
           <CircularProgress />
         </Box>
       ) : (
-        <TableContainer component={Paper} elevation={0} sx={{ border: `1px solid ${tok.hairline}`, borderRadius: '10px' }}>
-          <Table size="small">
+        <TableContainer component={Paper} elevation={0} sx={{ border: `1px solid ${tok.hairline}`, borderRadius: '10px', overflowX: 'auto' }}>
+          <Table size="small" sx={{ minWidth: 600 }}>
             <TableHead>
               <TableRow sx={{ bgcolor: tok.soft }}>
                 <TableCell sx={{ fontWeight: 600, color: tok.muted, fontSize: 12 }}>{t('common.name')}</TableCell>

@@ -204,7 +204,8 @@ export default function BillingPage() {
                 />
               )}
               <Divider />
-              <Table size="small">
+              <Box sx={{ overflowX: 'auto', width: '100%' }}>
+              <Table size="small" sx={{ minWidth: 600 }}>
                 <TableHead>
                   <TableRow>
                     <TableCell align="left">{t('billing.userCol')}</TableCell>
@@ -235,6 +236,7 @@ export default function BillingPage() {
                   })}
                 </TableBody>
               </Table>
+              </Box>
             </Card>
           )}
 
