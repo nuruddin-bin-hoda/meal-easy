@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { useTopbar } from '../../context/TopbarContext';
 import api from '../../api/axios';
+import { to12Hour } from '../../utils/timeUtils';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -389,7 +390,7 @@ export default function AdminDashboard() {
                   </Box>,
                   /* Cutoff */
                   <Box key={`${meal.mealType}-c`} sx={{ ...cellSx, textAlign: 'right', color: tok.muted, fontSize: 13 }}>
-                    {meal.cutoffTime ?? '—'}
+                    {meal.cutoffTime ? to12Hour(meal.cutoffTime) : '—'}
                   </Box>,
                 ];
               })}

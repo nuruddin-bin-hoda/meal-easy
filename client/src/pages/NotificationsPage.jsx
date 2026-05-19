@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
+import { formatDateTime } from '../utils/timeUtils';
 import { Alert, Box, Button, CircularProgress, Typography, useTheme } from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import AlarmIcon from '@mui/icons-material/Alarm';
@@ -120,7 +121,7 @@ export default function NotificationsPage() {
                     {n.message}
                   </Typography>
                   <Typography sx={{ fontSize: 11, color: tok.muted, mt: '2px' }}>
-                    {format(new Date(n.createdAt), 'dd MMM yyyy, HH:mm')}
+                    {formatDateTime(n.createdAt)}
                   </Typography>
                 </Box>
 

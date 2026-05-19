@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
+import { formatDateTime } from '../utils/timeUtils';
 import dayjs from 'dayjs';
 import {
   Alert, Box, Button, Card, CardContent, Chip, CircularProgress,
@@ -151,7 +152,7 @@ export default function AuditLogsPage() {
       flex: 1.4,
       minWidth: 165,
       valueFormatter: (value) =>
-        value ? format(new Date(value), 'dd MMM yyyy, HH:mm') : '—',
+        value ? formatDateTime(value) : '—',
     },
     {
       field: 'actorName',
@@ -297,7 +298,7 @@ export default function AuditLogsPage() {
                 <Box>
                   <Typography variant="caption" color="text.secondary">{t('audit.timestamp')}</Typography>
                   <Typography variant="body2" fontWeight={600}>
-                    {format(new Date(detailRow.timestamp), 'dd MMM yyyy, HH:mm:ss')}
+                    {formatDateTime(detailRow.timestamp)}
                   </Typography>
                 </Box>
                 <Box>

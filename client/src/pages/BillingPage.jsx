@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
+import { formatDateTime } from '../utils/timeUtils';
 import dayjs from 'dayjs';
 import {
   Alert, Box, Button, Card, CardContent, CardHeader, Chip, CircularProgress,
@@ -147,7 +148,7 @@ export default function BillingPage() {
         )}
         {isLocked && billingCycle?.submittedAt && (
           <Typography variant="body2" color="text.secondary">
-            {t('billing.submitted', { date: format(new Date(billingCycle.submittedAt), 'dd MMM yyyy, HH:mm') })}
+            {t('billing.submitted', { date: formatDateTime(billingCycle.submittedAt) })}
           </Typography>
         )}
       </Stack>

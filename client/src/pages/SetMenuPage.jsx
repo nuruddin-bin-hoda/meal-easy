@@ -8,6 +8,7 @@ import { DatePicker } from '@mui/x-date-pickers';
 import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import { useTopbar } from '../context/TopbarContext';
+import { to12Hour } from '../utils/timeUtils';
 
 function getLocalDateString(daysOffset = 0) {
   const d = new Date();
@@ -178,7 +179,7 @@ export default function SetMenuPage() {
             const locked = isPastDate || cutoffPassed;
             const lockCaption = isPastDate
               ? 'Cannot edit past menus'
-              : `Locked — cutoff passed at ${mealTypeCutoffs[mealType]}`;
+              : `Locked — cutoff passed at ${to12Hour(mealTypeCutoffs[mealType])}`;
 
             return (
               <Card key={mealType} elevation={2}>

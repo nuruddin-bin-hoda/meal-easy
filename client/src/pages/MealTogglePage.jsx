@@ -8,17 +8,11 @@ import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { useTopbar } from '../context/TopbarContext';
+import { to12Hour } from '../utils/timeUtils';
 
 const fmt = (n) => `৳${Number(n ?? 0).toFixed(2)}`;
 const ROMAN = ['I', 'II', 'III', 'IV', 'V'];
 
-const formatCutoff = (time) => {
-  if (!time) return '';
-  const [h, m] = time.split(':').map(Number);
-  const period = h >= 12 ? 'PM' : 'AM';
-  const hour = h % 12 || 12;
-  return `${hour}:${m.toString().padStart(2, '0')} ${period}`;
-};
 
 const MealToggle = memo(function MealToggle({ on, disabled, mealType, onToggle }) {
   const theme = useTheme();
@@ -243,13 +237,13 @@ export default function MealTogglePage() {
                           </Typography>
                           {meal.cutoffTime && (
                             <Typography sx={{ fontSize: 11, color: tok.muted, fontVariantNumeric: 'tabular-nums' }}>
-                              {formatCutoff(meal.cutoffTime)}
+                              {to12Hour(meal.cutoffTime)}
                             </Typography>
                           )}
                         </Box>
                         {meal.cutoffTime && !isLocked && (
                           <Typography sx={{ fontSize: 11, color: tok.dim, mt: '3px' }}>
-                            {t('meal.closesTomorrow', { time: formatCutoff(meal.cutoffTime) })}
+                            {t('meal.closesTomorrow', { time: to12Hour(meal.cutoffTime) })}
                           </Typography>
                         )}
                         {items.length > 0 && (

@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import { useTopbar } from '../../context/TopbarContext';
+import { to12Hour, formatDateTime } from '../../utils/timeUtils';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -225,7 +226,7 @@ export default function UserDashboard() {
                   </Typography>
                   {toggle.cutoffTime && (
                     <Typography sx={{ fontSize: 11, color: tok.muted, fontVariantNumeric: 'tabular-nums' }}>
-                      {toggle.cutoffTime}
+                      {to12Hour(toggle.cutoffTime)}
                     </Typography>
                   )}
                 </Box>
@@ -289,7 +290,7 @@ export default function UserDashboard() {
                 {n.message}
               </Typography>
               <Typography sx={{ fontSize: 11, color: tok.muted, mt: '1px' }}>
-                {new Date(n.createdAt).toLocaleString()}
+                {formatDateTime(n.createdAt)}
               </Typography>
             </Box>
           </Box>
