@@ -54,7 +54,7 @@ export function AuthProvider({ children }) {
       const res = await api.get('/auth/me');
       setUser(res.data);
     } catch {
-      setUser(userData);
+      await logout();
     }
   };
 

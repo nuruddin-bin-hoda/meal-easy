@@ -7,6 +7,7 @@ const { sendPushToAdmins } = require('../utils/pushService');
 const COOKIE_OPTS = {
   httpOnly: true,
   sameSite: 'lax',
+  maxAge: 7 * 24 * 60 * 60 * 1000,
   get secure() { return NODE_ENV === 'production' && process.env.SECURE_COOKIES === 'true'; },
 };
 
@@ -54,7 +55,7 @@ const login = async (req, res, next) => {
     if (!actor) {
       // Fall back to Chef (chefs have loginUsername stored, but spec says phone login)
       actor = await Chef.findOne({ phone });
-      isChef = true;
+      if (actor) isChef = true;
     }
 
     if (!actor) return res.status(401).json({ message: 'Invalid credentials.' });
@@ -66,7 +67,7 @@ const login = async (req, res, next) => {
 
       const token = signToken(actor._id, 'chef');
       res.cookie('token', token, COOKIE_OPTS);
-      return res.json({ user: { _id: actor._id, name: actor.name, role: 'chef' } });
+      return res.json({ user: { _id: actor._id, name: actor.name, role: 'chef', language: actor.language } });
     }
 
     // User path
@@ -107,7 +108,12 @@ const getMe = async (req, res, next) => {
     }
 
     const user = await User.findById(userId).select('-passwordHash');
-    if (!user) return res.status(404).json({ message: 'User not found.' });
+    if (!user || user.status === 'blocked' || user.status === 'rejected') {
+      return res.status(401).json({
+        error:   'ACCOUNT_BLOCKED',
+        message: 'Your account has been blocked. Please contact admin.',
+      });
+    }
     res.json(user);
   } catch (err) {
     next(err);

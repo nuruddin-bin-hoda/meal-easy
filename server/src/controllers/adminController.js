@@ -7,6 +7,7 @@ const { invalidateUserCache } = require('../middleware/authenticate');
 const COOKIE_OPTS = {
   httpOnly: true,
   sameSite: 'lax',
+  maxAge: 7 * 24 * 60 * 60 * 1000,
   get secure() { return NODE_ENV === 'production' && process.env.SECURE_COOKIES === 'true'; },
 };
 

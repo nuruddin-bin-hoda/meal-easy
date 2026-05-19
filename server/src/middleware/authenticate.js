@@ -7,6 +7,7 @@ const ROLE_RANK = { user: 1, chef: 2, admin: 3, superadmin: 4 };
 const COOKIE_OPTS = {
   httpOnly: true,
   sameSite: 'lax',
+  maxAge: 7 * 24 * 60 * 60 * 1000,
   get secure() { return NODE_ENV === 'production' && process.env.SECURE_COOKIES === 'true'; },
 };
 
@@ -18,15 +19,24 @@ async function getUserRecord(userId) {
   const cached = tvCache.get(userId);
   if (cached && cached.expiresAt > now) return cached;
 
-  const user = await User.findById(userId).select('tokenVersion role').lean();
+  const user = await User.findById(userId).select('tokenVersion role status').lean();
   const record = {
     version:   user?.tokenVersion ?? 0,
     role:      user?.role ?? null,
+    status:    user?.status ?? null,
     expiresAt: now + 60_000,
   };
   tvCache.set(userId, record);
   return record;
 }
+
+// Evict expired cache entries every 5 minutes to prevent unbounded growth.
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, val] of tvCache.entries()) {
+    if (val.expiresAt <= now) tvCache.delete(key);
+  }
+}, 5 * 60 * 1000);
 
 const authenticate = async (req, res, next) => {
   const token = req.cookies?.token;
@@ -47,6 +57,13 @@ const authenticate = async (req, res, next) => {
       // Token has been invalidated (e.g. demotion incremented tokenVersion).
       if (record.version > (decoded.tokenVersion ?? 0)) {
         return res.status(401).json({ message: 'Session expired. Please log in again.' });
+      }
+
+      if (record.status === 'blocked' || record.status === 'rejected') {
+        return res.status(401).json({
+          error:   'ACCOUNT_BLOCKED',
+          message: 'Your account has been blocked. Please contact admin.',
+        });
       }
 
       if (record.role && record.role !== decoded.role) {

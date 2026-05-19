@@ -12,7 +12,11 @@ export const setLoggingOut = (val) => { _loggingOut = val; };
 // This stops background polls (NotificationBell, etc.) from firing after
 // setLoggingOut(true) but before their host components have unmounted.
 api.interceptors.request.use((config) => {
-  if (_loggingOut && config.url !== '/auth/logout') {
+  if (
+    _loggingOut &&
+    !config.url?.includes('/auth/logout') &&
+    !config.url?.includes('/auth/login')
+  ) {
     return Promise.reject(Object.assign(new Error('logout in progress'), { __logoutAbort: true }));
   }
   return config;

@@ -29,7 +29,7 @@ export default function LoginPage() {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const tok = theme.tokens;
-  const { toggleMode, mode } = useColorMode();
+  const { mode } = useColorMode();
 
   const staleMessage = new URLSearchParams(location.search).get('reason') === 'session_stale'
     ? 'Your account role has changed. Please log in again.'
@@ -42,10 +42,13 @@ export default function LoginPage() {
 
   const currentLang = (i18n.language || 'en').startsWith('bn') ? 'bn' : 'en';
 
-  const handleChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+  const handleChange = (e) => {
+    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+    setError('');
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     setError('');
     setLoading(true);
     try {
@@ -116,11 +119,15 @@ export default function LoginPage() {
         )}
 
         {/* Card */}
-        <Box sx={{
-          bgcolor: tok.surface, border: `1px solid ${tok.hairline}`,
-          borderRadius: '12px', p: '20px 22px',
-          display: 'flex', flexDirection: 'column', gap: '14px',
-        }}>
+        <Box
+          component="form"
+          onSubmit={handleSubmit}
+          sx={{
+            bgcolor: tok.surface, border: `1px solid ${tok.hairline}`,
+            borderRadius: '12px', p: '20px 22px',
+            display: 'flex', flexDirection: 'column', gap: '14px',
+          }}
+        >
           {error && <Alert severity="error" sx={{ borderRadius: '8px' }}>{error}</Alert>}
 
           <TextField
@@ -179,8 +186,7 @@ export default function LoginPage() {
           </Box>
 
           <Button
-            type="button"
-            onClick={handleSubmit}
+            type="submit"
             variant="contained"
             fullWidth
             disabled={loading}
