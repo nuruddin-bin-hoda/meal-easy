@@ -4,19 +4,27 @@ const { User, Chef, Notification } = require('../models');
 
 webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
-async function _send(subscription, payload) {
+// userId and userModel are required so expired subscriptions can be cleaned up.
+async function _send(subscription, payload, userId, userModel) {
   try {
     await webpush.sendNotification(subscription, JSON.stringify(payload));
-  } catch {
-    // Fire-and-forget: swallow delivery errors (expired/invalid subscriptions)
+  } catch (err) {
+    if (err.statusCode === 410 || err.statusCode === 404) {
+      // Subscription is expired or gone — remove it from the database.
+      const Model = userModel === 'Chef' ? Chef : User;
+      await Model.findByIdAndUpdate(userId, { $unset: { notificationSubscription: 1 } }).catch(() => {});
+    } else {
+      console.error(`[push] delivery failed for ${userModel}:${userId}: ${err.message}`);
+    }
   }
 }
 
-async function _saveNotification(userId, { title, body, data }) {
+async function _saveNotification(userId, { title, body, data }, userModel = 'User') {
   try {
     await Notification.create({
       userId,
-      event: data?.event ?? title,
+      userModel,
+      event:   data?.event ?? title,
       message: body,
     });
   } catch {
@@ -30,42 +38,53 @@ async function sendPushToUser(userId, { title, body, data = {} }) {
     Chef.findById(userId).select('notificationSubscription'),
   ]);
 
-  const actor = user ?? chef;
+  const actor     = user ?? chef;
+  const userModel = user ? 'User' : 'Chef';
+
   if (actor?.notificationSubscription?.endpoint) {
-    await _send(actor.notificationSubscription, { title, body, data });
+    await _send(actor.notificationSubscription, { title, body, data }, actor._id, userModel);
   }
 
-  // Save Notification doc only for User records (Notification.userId refs User)
-  if (user) {
-    await _saveNotification(userId, { title, body, data });
-  }
+  await _saveNotification(userId, { title, body, data }, userModel);
 }
 
 async function sendPushToAdmins({ title, body, data = {} }) {
   const admins = await User.find({
-    role: { $in: ['admin', 'superadmin'] },
+    role:   { $in: ['admin', 'superadmin'] },
     status: 'active',
     'notificationSubscription.endpoint': { $exists: true },
   }).select('_id notificationSubscription');
 
   await Promise.all(
     admins.map(async (admin) => {
-      await _send(admin.notificationSubscription, { title, body, data });
-      await _saveNotification(admin._id, { title, body, data });
+      await _send(admin.notificationSubscription, { title, body, data }, admin._id, 'User');
+      await _saveNotification(admin._id, { title, body, data }, 'User');
     }),
   );
 }
 
+// Sends to all active Users AND all active Chefs with a valid subscription.
 async function sendPushToAllUsers({ title, body, data = {} }) {
-  const users = await User.find({
-    status: 'active',
-    'notificationSubscription.endpoint': { $exists: true },
-  }).select('_id notificationSubscription');
+  const [users, chefs] = await Promise.all([
+    User.find({
+      status: 'active',
+      'notificationSubscription.endpoint': { $exists: true },
+    }).select('_id notificationSubscription'),
+    Chef.find({
+      isActive: true,
+      'notificationSubscription.endpoint': { $exists: true },
+    }).select('_id notificationSubscription'),
+  ]);
+
+  const targets = [
+    ...users.map((u) => ({ doc: u, model: 'User' })),
+    ...chefs.map((c) => ({ doc: c, model: 'Chef' })),
+  ];
 
   await Promise.all(
-    users.map(async (u) => {
-      await _send(u.notificationSubscription, { title, body, data });
-      await _saveNotification(u._id, { title, body, data });
+    targets.map(async ({ doc, model }) => {
+      await _send(doc.notificationSubscription, { title, body, data }, doc._id, model);
+      await _saveNotification(doc._id, { title, body, data }, model);
     }),
   );
 }

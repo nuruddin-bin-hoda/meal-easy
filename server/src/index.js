@@ -36,7 +36,7 @@ connectDB()
   .then(async () => {
     await runStartupChecks();
     if (NODE_ENV !== 'test') {
-      require('./jobs/cronJobs').startCronJobs();
+      await require('./jobs/cronJobs').startCronJobs();
     }
   })
   .catch((err) => {
