@@ -10,6 +10,8 @@ const messSettingsSchema = new mongoose.Schema({
     isActive: Boolean,
     isAutoEnabled: Boolean,
     cutoffTime: { type: String },
+    createdAt: { type: Date, default: () => new Date() },
+    deletedAt: { type: Date, default: null },
   }],
   lowBalanceAlertsEnabled:    { type: Boolean, default: true },
   menuUpdateAlertsEnabled:    { type: Boolean, default: false },

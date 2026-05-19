@@ -78,7 +78,13 @@ export default function SettingsPage() {
 
   useEffect(() => {
     api.get('/settings')
-      .then((res) => setSettings(res.data))
+      .then((res) => {
+        const data = res.data;
+        if (!data.timezone) {
+          data.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        }
+        setSettings(data);
+      })
       .catch(() => notify('Failed to load settings', 'error'))
       .finally(() => setLoading(false));
   }, []);

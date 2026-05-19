@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Alert, Box, CircularProgress, Typography, useTheme } from '@mui/material';
+import { Box, CircularProgress, Typography, useTheme } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import { useTopbar } from '../context/TopbarContext';
@@ -19,12 +19,9 @@ function getWeekDates() {
   });
 }
 
-// Normalise server keys (e.g. "Breakfast") to lowercase so lookups always match
 function normaliseMenus(raw) {
   return Object.fromEntries(Object.entries(raw).map(([k, v]) => [k.toLowerCase(), v]));
 }
-
-const MEAL_ORDER = ['breakfast', 'lunch', 'dinner'];
 
 export default function MenuPage() {
   const { t } = useTranslation();
@@ -36,7 +33,8 @@ export default function MenuPage() {
   const weekDates = getWeekDates();
   const todayStr = localDateStr(new Date());
 
-  const [weekMenus, setWeekMenus] = useState({});
+  // weekData[date] = { menus: { [lowerName]: items[] }, mealTypes: [{ name, cutoffTime }] }
+  const [weekData, setWeekData] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -49,10 +47,16 @@ export default function MenuPage() {
     setLoading(true);
     Promise.all(weekDates.map((date) =>
       api.get(`/menus/${date}`)
-        .then((r) => ({ date, menus: normaliseMenus(r.data.menus ?? {}) }))
-        .catch(() => ({ date, menus: {} })),
+        .then((r) => ({
+          date,
+          menus:     normaliseMenus(r.data.menus ?? {}),
+          mealTypes: r.data.mealTypes ?? [],
+        }))
+        .catch(() => ({ date, menus: {}, mealTypes: [] })),
     )).then((results) => {
-      setWeekMenus(Object.fromEntries(results.map((r) => [r.date, r.menus])));
+      setWeekData(Object.fromEntries(
+        results.map((r) => [r.date, { menus: r.menus, mealTypes: r.mealTypes }]),
+      ));
     }).finally(() => setLoading(false));
   }, []);
 
@@ -64,11 +68,10 @@ export default function MenuPage() {
     <Box sx={{ p: pad, display: 'flex', flexDirection: 'column', gap: '10px' }}>
       {weekDates.map((date) => {
         const isToday = date === todayStr;
-        const menus = weekMenus[date] ?? {};
+        const dayData = weekData[date] ?? { menus: {}, mealTypes: [] };
+        const menus = dayData.menus;
+        const dayMealTypes = dayData.mealTypes;
         const dayLabel = new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-        const mealTypes = MEAL_ORDER.filter((mt) => menus[mt] !== undefined).length > 0
-          ? MEAL_ORDER
-          : Object.keys(menus).length > 0 ? Object.keys(menus) : MEAL_ORDER;
 
         return (
           <Box key={date} sx={{
@@ -92,33 +95,41 @@ export default function MenuPage() {
             </Box>
 
             {/* Meal columns */}
-            <Box sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
-            }}>
-              {['Breakfast', 'Lunch', 'Dinner'].map((mt, idx) => {
-                const key = mt.toLowerCase();
-                const items = menus[key] ?? [];
-                return (
-                  <Box key={mt} sx={{
-                    p: '12px 16px',
-                    borderLeft: { xs: 'none', md: idx > 0 ? `1px solid ${tok.hairlineSoft}` : 'none' },
-                    borderTop: { xs: idx > 0 ? `1px solid ${tok.hairlineSoft}` : 'none', md: 'none' },
-                  }}>
-                    <Typography sx={{ fontSize: 10, color: tok.muted, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500, mb: '4px' }}>
-                      {mt}
-                    </Typography>
-                    <Typography sx={{
-                      fontSize: 13, lineHeight: 1.5,
-                      color: items.length === 0 ? tok.dim : tok.ink,
-                      fontStyle: items.length === 0 ? 'italic' : 'normal',
+            {dayMealTypes.length === 0 ? (
+              <Box sx={{ p: '12px 16px' }}>
+                <Typography sx={{ fontSize: 13, color: tok.muted, fontStyle: 'italic' }}>
+                  No meal types configured
+                </Typography>
+              </Box>
+            ) : (
+              <Box sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', md: `repeat(${dayMealTypes.length}, 1fr)` },
+              }}>
+                {dayMealTypes.map((mt, idx) => {
+                  const key = mt.name.toLowerCase();
+                  const items = menus[key] ?? [];
+                  return (
+                    <Box key={mt.name} sx={{
+                      p: '12px 16px',
+                      borderLeft: { xs: 'none', md: idx > 0 ? `1px solid ${tok.hairlineSoft}` : 'none' },
+                      borderTop: { xs: idx > 0 ? `1px solid ${tok.hairlineSoft}` : 'none', md: 'none' },
                     }}>
-                      {items.length === 0 ? t('menu.noItems') : items.join(' · ')}
-                    </Typography>
-                  </Box>
-                );
-              })}
-            </Box>
+                      <Typography sx={{ fontSize: 10, color: tok.muted, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500, mb: '4px' }}>
+                        {mt.name}
+                      </Typography>
+                      <Typography sx={{
+                        fontSize: 13, lineHeight: 1.5,
+                        color: items.length === 0 ? tok.dim : tok.ink,
+                        fontStyle: items.length === 0 ? 'italic' : 'normal',
+                      }}>
+                        {items.length === 0 ? t('menu.noItems') : items.join(' · ')}
+                      </Typography>
+                    </Box>
+                  );
+                })}
+              </Box>
+            )}
           </Box>
         );
       })}
