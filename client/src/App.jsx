@@ -20,6 +20,7 @@ import AuditLogsPage from './pages/AuditLogsPage';
 import NotificationsPage from './pages/NotificationsPage';
 import ProfilePage from './pages/ProfilePage';
 import UsersPage from './pages/UsersPage';
+import AdminsPage from './pages/AdminsPage';
 import SettingsPage from './pages/SettingsPage';
 
 function P({ children }) {
@@ -59,6 +60,7 @@ export default function App() {
 
       {/* ── Admin — clean paths (used by sidebar nav) ── */}
       <Route path="/users"          element={<P><UsersPage /></P>} />
+      <Route path="/admins"         element={<P><AdminsPage /></P>} />
       <Route path="/set-menu"        element={<P><SetMenuPage /></P>} />
       <Route path="/menu/set"        element={<P><SetMenuPage /></P>} />
       <Route path="/purchases"      element={<P><PurchasesPage /></P>} />

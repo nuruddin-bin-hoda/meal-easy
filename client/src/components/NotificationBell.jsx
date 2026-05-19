@@ -21,7 +21,7 @@ export default function NotificationBell() {
     };
 
     fetch();
-    const timer = setInterval(fetch, 60_000);
+    const timer = setInterval(fetch, 10_000);
     return () => {
       cancelled = true;
       clearInterval(timer);

@@ -25,6 +25,7 @@ import {
   MoreHoriz as MoreIcon,
   Close as CloseIcon,
   RestaurantMenu as SetMenuIcon,
+  AdminPanelSettings as AdminPanelSettingsIcon,
 } from '@mui/icons-material';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -73,6 +74,12 @@ const NAV_ADMIN = [
   { path: '/audit-logs', label: 'nav.auditLogs',   Icon: AuditIcon     },
   { path: '/profile',   label: 'nav.profile',     Icon: ProfileIcon   },
   { path: '/settings',   label: 'nav.settings',    Icon: SettingsIcon  },
+];
+
+const NAV_SUPERADMIN = [
+  ...NAV_ADMIN.slice(0, 2), // dashboard, users
+  { path: '/admins',    label: 'nav.admins',    Icon: AdminPanelSettingsIcon },
+  ...NAV_ADMIN.slice(2), // everything else
 ];
 
 const NAV_CHEF = [
@@ -162,7 +169,7 @@ export default function AppLayout({ children }) {
 
   const role    = user?.role ?? 'user';
   const cfgRole = role === 'superadmin' ? 'admin' : role;
-  const navItems = cfgRole === 'admin' ? NAV_ADMIN : cfgRole === 'chef' ? NAV_CHEF : NAV_USER;
+  const navItems = role === 'superadmin' ? NAV_SUPERADMIN : cfgRole === 'admin' ? NAV_ADMIN : cfgRole === 'chef' ? NAV_CHEF : NAV_USER;
   const tabs     = cfgRole === 'admin' ? TABS_ADMIN : cfgRole === 'chef' ? TABS_CHEF : TABS_USER;
 
   const currentLang = (i18n.language || 'en').startsWith('bn') ? 'bn' : 'en';

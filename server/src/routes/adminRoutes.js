@@ -6,6 +6,7 @@ const authenticate = require('../middleware/authenticate');
 const authorize = require('../middleware/authorize');
 const validate = require('../middleware/validate');
 const { User } = require('../models');
+const { promoteUser, downgradeAdmin } = require('../controllers/adminController');
 
 const router = Router();
 
@@ -49,5 +50,8 @@ router.get(
     }
   },
 );
+
+router.patch('/admins/:id/promote',   authenticate, authorize(['superadmin']), promoteUser);
+router.patch('/admins/:id/downgrade', authenticate, authorize(['superadmin']), downgradeAdmin);
 
 module.exports = router;
