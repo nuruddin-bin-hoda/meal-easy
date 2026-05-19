@@ -87,11 +87,11 @@ export default function ChefDashboard() {
                       {t('dashboard.menuNotSetShort')}
                     </Typography>
                   ) : (
-                    <Stack direction="row" flexWrap="wrap" gap={0.5} sx={{ mt: 1 }}>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
                       {items.map((item) => (
                         <Chip key={item} label={item} size="small" variant="outlined" />
                       ))}
-                    </Stack>
+                    </Box>
                   )}
                 </CardContent>
               </Card>

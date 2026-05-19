@@ -104,7 +104,7 @@ const getMe = async (req, res, next) => {
     if (role === 'chef') {
       const chef = await Chef.findById(userId).select('-loginPasswordHash');
       if (!chef) return res.status(404).json({ message: 'Chef not found.' });
-      return res.json(chef);
+      return res.json({ ...chef.toObject(), role: 'chef' });
     }
 
     const user = await User.findById(userId).select('-passwordHash');
