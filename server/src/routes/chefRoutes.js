@@ -6,7 +6,7 @@ const authorize = require('../middleware/authorize');
 const validate = require('../middleware/validate');
 const {
   createChef, listChefs, getChef, updateChef,
-  recordSalary, addBonus, getSalaryHistory,
+  recordSalary, addBonus, getSalaryHistory, changeChefPassword,
 } = require('../controllers/chefController');
 
 const router = Router();
@@ -73,5 +73,7 @@ router.post(
 );
 
 router.get('/chefs/:id/salary', ...adminOnly, getSalaryHistory);
+
+router.patch('/chefs/:id/password', ...adminOnly, changeChefPassword);
 
 module.exports = router;

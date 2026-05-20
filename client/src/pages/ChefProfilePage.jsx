@@ -42,6 +42,11 @@ export default function ChefProfilePage() {
   const [editForm, setEditForm] = useState({});
   const [editSubmitting, setEditSubmitting] = useState(false);
 
+  const [pwOpen, setPwOpen] = useState(false);
+  const [pwForm, setPwForm] = useState({ newPassword: '', confirmPassword: '' });
+  const [pwError, setPwError] = useState('');
+  const [pwSubmitting, setPwSubmitting] = useState(false);
+
   const [salaryOpen, setSalaryOpen] = useState(false);
   const [salaryForm, setSalaryForm] = useState({ billingMonth: currentMonth(), salaryAmount: '', paidStatus: 'unpaid' });
   const [salarySubmitting, setSalarySubmitting] = useState(false);
@@ -78,6 +83,30 @@ export default function ChefProfilePage() {
     };
     load();
   }, [id, t]);
+
+  const handlePwSubmit = async (e) => {
+    e.preventDefault();
+    setPwError('');
+    if (pwForm.newPassword.length < 6) {
+      setPwError('Password must be at least 6 characters.');
+      return;
+    }
+    if (pwForm.newPassword !== pwForm.confirmPassword) {
+      setPwError('Passwords do not match.');
+      return;
+    }
+    setPwSubmitting(true);
+    try {
+      await api.patch(`/chefs/${id}/password`, { password: pwForm.newPassword });
+      setPwOpen(false);
+      setPwForm({ newPassword: '', confirmPassword: '' });
+      notify('Password updated');
+    } catch (err) {
+      setPwError(err.response?.data?.message ?? 'Failed to update password.');
+    } finally {
+      setPwSubmitting(false);
+    }
+  };
 
   const openEdit = () => {
     setEditForm({
@@ -194,6 +223,9 @@ export default function ChefProfilePage() {
               />
               <Button variant="outlined" size="small" onClick={openEdit}>
                 {t('chefs.editProfile')}
+              </Button>
+              <Button variant="outlined" size="small" onClick={() => { setPwForm({ newPassword: '', confirmPassword: '' }); setPwError(''); setPwOpen(true); }}>
+                Change Password
               </Button>
             </Stack>
           }
@@ -316,6 +348,34 @@ export default function ChefProfilePage() {
         </Table>
         </Box>
       </Card>
+
+      {/* Change password dialog */}
+      <Dialog open={pwOpen} onClose={() => setPwOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Change Password</DialogTitle>
+        <Box component="form" onSubmit={handlePwSubmit}>
+          <DialogContent>
+            <Stack spacing={2} sx={{ mt: 0.5 }}>
+              {pwError && <Alert severity="error">{pwError}</Alert>}
+              <TextField
+                label="New Password" type="password" value={pwForm.newPassword} required autoFocus
+                onChange={e => setPwForm(f => ({ ...f, newPassword: e.target.value }))}
+                fullWidth
+              />
+              <TextField
+                label="Confirm Password" type="password" value={pwForm.confirmPassword} required
+                onChange={e => setPwForm(f => ({ ...f, confirmPassword: e.target.value }))}
+                fullWidth
+              />
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setPwOpen(false)}>{t('common.cancel')}</Button>
+            <Button type="submit" variant="contained" disabled={pwSubmitting}>
+              {pwSubmitting ? <CircularProgress size={20} color="inherit" /> : 'Update Password'}
+            </Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
 
       {/* Edit profile dialog */}
       <Dialog open={editOpen} onClose={() => setEditOpen(false)} maxWidth="sm" fullWidth>

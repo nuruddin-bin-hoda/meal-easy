@@ -36,7 +36,7 @@ const createChef = async (req, res, next) => {
 
 const listChefs = async (req, res, next) => {
   try {
-    const chefs = await Chef.find({ isActive: true }).select('-loginPasswordHash').sort({ createdAt: -1 });
+    const chefs = await Chef.find({}).select('-loginPasswordHash').sort({ createdAt: -1 });
     res.json({ chefs });
   } catch (err) {
     next(err);
@@ -147,4 +147,33 @@ const getSalaryHistory = async (req, res, next) => {
   }
 };
 
-module.exports = { createChef, listChefs, getChef, updateChef, recordSalary, addBonus, getSalaryHistory };
+const changeChefPassword = async (req, res, next) => {
+  try {
+    const { password } = req.body;
+    if (!password || password.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters.' });
+    }
+
+    const chef = await Chef.findById(req.params.id);
+    if (!chef) return res.status(404).json({ message: 'Chef not found.' });
+
+    chef.loginPasswordHash = await bcrypt.hash(password, 10);
+    await chef.save();
+
+    await AuditLog.create({
+      actorId:      req.user.userId,
+      actorRole:    req.user.role,
+      action:       'CHEF_PASSWORD_CHANGED',
+      targetEntity: 'Chef',
+      targetId:     chef._id,
+      oldValue:     null,
+      newValue:     { passwordChanged: true },
+    });
+
+    res.json({ message: 'Password updated successfully.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { createChef, listChefs, getChef, updateChef, recordSalary, addBonus, getSalaryHistory, changeChefPassword };

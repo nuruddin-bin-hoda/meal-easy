@@ -68,7 +68,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (editing) {
-      setForm({ name: user?.name ?? '', roomNumber: user?.roomNumber ?? '' });
+      setForm({ name: user?.name ?? '', ...(user?.role !== 'chef' && { roomNumber: user?.roomNumber ?? '' }) });
       setPhotoFile(null);
       setPhotoPreview(null);
       setSaveError('');
@@ -79,7 +79,7 @@ export default function ProfilePage() {
 
   const fields = [
     { label: t('common.name'),     value: user?.name },
-    { label: t('auth.roomNumber'), value: user?.roomNumber },
+    ...(user?.role !== 'chef' ? [{ label: t('auth.roomNumber'), value: user?.roomNumber }] : []),
     { label: t('auth.phone'),      value: user?.phone },
     { label: 'Member since',       value: user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long' }) : null },
   ].filter((f) => f.value);
@@ -99,7 +99,7 @@ export default function ProfilePage() {
       const userId = user?._id;
       const data = new FormData();
       data.append('name', form.name.trim());
-      data.append('roomNumber', form.roomNumber.trim());
+      if (user?.role !== 'chef') data.append('roomNumber', form.roomNumber.trim());
       if (photoFile) data.append('photo', photoFile);
       await api.patch(`/users/${userId}`, data);
       await login(user);
@@ -202,12 +202,14 @@ export default function ProfilePage() {
             fullWidth size="small"
           />
 
-          <TextField
-            label={t('auth.roomNumber')}
-            value={form.roomNumber}
-            onChange={(e) => setForm((f) => ({ ...f, roomNumber: e.target.value }))}
-            fullWidth size="small"
-          />
+          {user?.role !== 'chef' && (
+            <TextField
+              label={t('auth.roomNumber')}
+              value={form.roomNumber}
+              onChange={(e) => setForm((f) => ({ ...f, roomNumber: e.target.value }))}
+              fullWidth size="small"
+            />
+          )}
 
           {/* Photo upload */}
           <Box>
@@ -297,7 +299,7 @@ export default function ProfilePage() {
       </Box>
 
       {/* Change password button */}
-      {!showPasswordForm && (
+      {user?.role !== 'chef' && !showPasswordForm && (
         <Button
           variant="outlined"
           startIcon={<LockIcon />}
@@ -310,7 +312,7 @@ export default function ProfilePage() {
       )}
 
       {/* Password change form */}
-      {showPasswordForm && (
+      {user?.role !== 'chef' && showPasswordForm && (
         <Box sx={{ bgcolor: tok.surface, border: `1px solid ${tok.hairline}`, borderRadius: '12px', p: '20px 22px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <Typography sx={{ fontSize: 14, fontWeight: 600, color: tok.ink }}>Change Password</Typography>
 

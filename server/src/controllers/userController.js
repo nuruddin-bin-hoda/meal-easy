@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const { User, BillingCycle, AuditLog } = require('../models');
+const { User, Chef, BillingCycle, AuditLog } = require('../models');
 const { sendPushToUser } = require('../utils/pushService');
 
 const currentBillingMonth = () => {
@@ -50,9 +50,25 @@ const getUser = async (req, res, next) => {
 // PATCH /api/v1/users/:id  — Self only
 const updateUser = async (req, res, next) => {
   try {
-    const { userId } = req.user;
+    const { userId, role } = req.user;
     if (userId !== req.params.id) {
       return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    if (role === 'chef') {
+      const updates = {};
+      if (req.body.name !== undefined) updates.name = req.body.name;
+      if (req.file) updates.photo = req.file.filename;
+
+      const chef = await Chef.findByIdAndUpdate(
+        req.params.id,
+        updates,
+        { new: true, runValidators: true },
+      ).select('-loginPasswordHash');
+
+      if (!chef) return res.status(404).json({ message: 'Chef not found.' });
+
+      return res.json({ ...chef.toObject(), role: 'chef' });
     }
 
     const allowed = ['name', 'phone', 'roomNumber', 'language'];
