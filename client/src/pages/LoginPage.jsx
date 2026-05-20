@@ -39,6 +39,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [devHover, setDevHover] = useState(false);
 
   const currentLang = (i18n.language || 'en').startsWith('bn') ? 'bn' : 'en';
 
@@ -233,6 +234,83 @@ export default function LoginPage() {
             </Box>
           ))}
         </Box>
+      </Box>
+
+      {/* Copyright footer — fixed at bottom of viewport */}
+      <Box sx={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        textAlign: 'center',
+        pb: '16px',
+        pointerEvents: 'none',
+      }}>
+        <Typography sx={{ fontSize: 12, color: tok.muted, pointerEvents: 'auto' }}>
+          © 2026 Meal Easy. Developed by{' '}
+          <Box
+            component="span"
+            sx={{ position: 'relative', display: 'inline-block' }}
+            onMouseEnter={() => setDevHover(true)}
+            onMouseLeave={() => setDevHover(false)}
+          >
+            <Box
+              component="a"
+              href="https://nuruddin.online"
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{
+                color: 'inherit',
+                fontWeight: 600,
+                textDecoration: 'none',
+                cursor: 'pointer',
+                '&:hover': { textDecoration: 'underline' },
+              }}
+            >
+              Nuruddin
+            </Box>
+
+            {devHover && (
+              <Box sx={{
+                position: 'absolute',
+                bottom: 'calc(100% + 8px)',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: 220,
+                p: '12px',
+                bgcolor: tok.surface,
+                border: `1px solid ${tok.hairline}`,
+                borderRadius: '12px',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                zIndex: 1400,
+                pointerEvents: 'none',
+                '@keyframes devPopIn': {
+                  from: { opacity: 0, transform: 'translateX(-50%) translateY(4px)' },
+                  to:   { opacity: 1, transform: 'translateX(-50%) translateY(0)' },
+                },
+                animation: 'devPopIn 150ms ease forwards',
+              }}>
+                <Box
+                  component="img"
+                  src="/nuruddin-dp.svg"
+                  alt="Nuruddin"
+                  sx={{ width: 48, height: 48, borderRadius: '50%', flexShrink: 0, objectFit: 'cover' }}
+                />
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                  <Typography sx={{ fontSize: 13, fontWeight: 600, color: tok.ink, lineHeight: 1.3 }}>
+                    Hi, I'm Nuruddin
+                  </Typography>
+                  <Typography sx={{ fontSize: 12, color: tok.muted, lineHeight: 1.3 }}>
+                    A full-stack web engineer
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+          </Box>
+        </Typography>
       </Box>
     </Box>
   );
