@@ -4,30 +4,33 @@ A full-stack meal management web application for a residential mess of 100+ user
 
 ## Features
 
-- **Meal toggling** — members toggle their meal on/off for the next day before a configurable cutoff time
-- **Menu management** — admins set the daily menu per meal type
-- **Cost & billing** — purchase tracking, other costs, automated billing calculation and PDF reports
+- **Meal toggling** — members toggle their meal on/off for the next day before a configurable per-meal-type cutoff time
+- **Menu management** — admins set the daily menu per meal type; members can view the upcoming menu
+- **Mess Settings** — admin configures meal types (each with its own cutoff time), mess timezone, guest meal limit, and notification preferences. A setup-required banner appears until all required fields are configured.
+- **Cost & billing** — purchase tracking, other costs, automated billing calculation, and PDF reports
 - **Deposits & balance** — per-user deposit ledger, dynamic balance computation
 - **Stock tracking** — inventory with low-stock alerts
-- **Chef management** — chef profiles, salary, and bonus records
-- **User management** — registration approval, block/unblock
+- **Chef management** — chef profiles, salary, and bonus records. Admin can reset a chef's password from the chef profile page; the password change immediately invalidates the chef's active session.
+- **User management** — registration approval, block/unblock; read-only access to Purchases and Other Costs for regular users
+- **Admin management** — Super Admin can promote users to Admin or demote Admins back to users. Role changes take effect immediately via JWT reissue. Demotion invalidates the existing session instantly.
 - **Audit logs** — every sensitive action is logged with actor, target, and diff snapshots
-- **Push notifications** — web-push via VAPID, service worker
-- **PDF export** — Puppeteer-powered monthly reports and audit log exports
-- **Bilingual UI** — English and Bengali (বাংলা) via i18next; font switches automatically
+- **Push notifications** — web-push via VAPID, service worker; cutoff reminders and low-stock alerts via scheduled cron jobs
+- **PDF export** — Puppeteer-powered monthly user reports (per-user meal and billing breakdown) and admin billing reports (all users' bills, deposits, and balances for a month)
+- **PWA support** — installable as a Progressive Web App on Android and iOS; supports offline app shell and Web Push notifications
+- **Bilingual UI** — English and Bengali (বাংলা) via i18next; Bengali font (Hind Siliguri) embedded in PDFs for offline rendering
 
 ## Tech Stack
 
-| Layer           | Technology                                 |
-| --------------- | ------------------------------------------ |
-| Frontend        | React 19 + Vite, Material UI v6, i18next   |
-| Backend         | Node.js + Express.js                       |
-| Database        | MongoDB 7 + Mongoose                       |
-| Auth            | JWT in httpOnly cookie                     |
-| Push            | Web Push API + VAPID + Service Worker      |
-| PDF             | Puppeteer (server-side, headless Chromium) |
-| Proxy / Serving | Nginx (production)                         |
-| Container       | Docker + Docker Compose                    |
+| Layer           | Technology                                                                    |
+| --------------- | ----------------------------------------------------------------------------- |
+| Frontend        | React 19 + Vite, Material UI v6, i18next, date-fns, dayjs                    |
+| Backend         | Node.js + Express.js                                                          |
+| Database        | MongoDB 7 + Mongoose                                                          |
+| Auth            | JWT in httpOnly cookie                                                        |
+| Push            | Web Push API + VAPID + Service Worker                                         |
+| PDF             | puppeteer-core (headless Chromium via system install, not bundled)            |
+| Proxy / Serving | Nginx (production)                                                            |
+| Container       | Docker + Docker Compose                                                       |
 
 ## Prerequisites
 
@@ -80,11 +83,11 @@ npx web-push generate-vapid-keys
 docker compose up --build -d
 ```
 
-This builds the React client and the API server, then starts MongoDB, the server, and Nginx. The first build takes a few minutes (Puppeteer downloads Chromium).
+This builds the React client and the API server, then starts MongoDB, the server, and Nginx. The first build takes a few minutes.
 
 ### 4. Create the superadmin account
 
-The seed script creates the initial superadmin user and ensures the MessSettings singleton exists.
+The seed script creates the initial superadmin user and ensures the MessSettings singleton exists. The singleton is created **empty** — you must configure meal types, timezone, and cutoff times via the Settings page before the app is fully usable.
 
 ```bash
 # From the project root — connects to the running MongoDB container
@@ -96,7 +99,7 @@ Expected output:
 ```
 Connected to MongoDB.
 Super Admin created  phone=01700000000  password=superadmin123
-MessSettings created with defaults.
+MessSettings created (empty — configure via Settings page).
 Done.
 ```
 
@@ -160,8 +163,10 @@ MONGO_URI=mongodb://localhost:27017/meal-easy node server/src/scripts/seed.js
 Run: `./scripts/set-ip.sh`
 
 This auto-detects your Mac's IP and updates `MAC_IP` in `.env`.
-Then restart Docker and open `http://YOUR_IP:4000` on your phone.
+Then restart Docker and open `http://YOUR_IP` (port 80, served by Nginx) on your phone.
 If your IP changes, just run the script again and restart Docker.
+
+> **Note:** Port 4000 is the Vite dev server port and only applies when running the client **outside Docker** (`cd client && npm run dev`). For Docker-based access, always use port 80.
 
 ## Project Structure
 
@@ -171,7 +176,7 @@ meal-easy/
 │   ├── src/
 │   │   ├── api/            axios instance with base URL + 401 interceptor
 │   │   ├── components/     shared UI (AppLayout, dashboards, NotificationBell)
-│   │   ├── context/        AuthContext (user state, push subscription)
+│   │   ├── context/        AuthContext, SettingsContext, ThemeContext, TopbarContext
 │   │   ├── i18n/           en.json, bn.json, i18next init
 │   │   └── pages/          one file per route
 │   ├── Dockerfile          multi-stage: Node build → Nginx serve
@@ -179,20 +184,24 @@ meal-easy/
 │
 ├── server/                 Node.js + Express API
 │   └── src/
+│       ├── assets/
+│       │   └── fonts/      HindSiliguri-Regular.ttf, NotoSansBengali-Regular.ttf
 │       ├── config/         db.js (Mongoose connect), env.js, multer.js
 │       ├── controllers/    route handlers (one per resource)
-│       ├── jobs/           cronJobs.js (daily notifications, billing reminders)
+│       ├── jobs/           cronJobs.js (cutoff reminders, low-stock alerts)
 │       ├── middleware/      authenticate, authorize, errorHandler, validate
 │       ├── models/         Mongoose schemas + barrel index.js
 │       ├── routes/         Express routers
 │       ├── scripts/        seed.js
-│       └── utils/          billingEngine, balanceHelper, pdfGenerator,
-│                           reportTemplate, pushService
+│       └── utils/          billingEngine, balanceHelper, mealHelpers,
+│                           pdfGenerator, reportTemplate, billingReportTemplate,
+│                           pushService
 │
 ├── data/                   Docker bind-mounts (git-ignored)
 │   ├── mongo/              MongoDB data files
 │   └── uploads/            user/chef photo uploads
 │
+├── scripts/                helper shell scripts (set-ip.sh for mobile access)
 ├── .env.example            template for environment variables
 ├── docker-compose.yml      production service definitions
 └── CLAUDE.md               project context for AI assistance
@@ -204,12 +213,17 @@ meal-easy/
 | -------------- | -------------------------------------------------------------------------------- |
 | **superadmin** | Full control. Created by seed script. Can manage admins.                         |
 | **admin**      | Same as superadmin except cannot manage other admins.                            |
-| **user**       | Self-registers (requires admin approval). Toggles own meals, views own reports.  |
+| **user**       | Self-registers (requires admin approval). Toggles own meals, views own reports. Read-only access to Purchases and Other Costs records. |
 | **chef**       | Created by admin. Views today's portions and stock. Can update stock quantities. |
 
 ## Environment Variables
 
-All variables live in the root `.env` file (which is also loaded by the server process via `dotenv`).
+There are two `.env` files:
+
+- **Root `.env`** — loaded by the server process via `dotenv`. Copy from `.env.example`.
+- **`client/.env`** — Vite build-time variables for the React frontend. Create this file manually for local dev; Docker Compose injects the values at build time.
+
+### Server (`root .env`)
 
 | Variable            | Required | Default                 | Description                                                                                                                          |
 | ------------------- | -------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
@@ -222,8 +236,19 @@ All variables live in the root `.env` file (which is also loaded by the server p
 | `VAPID_PRIVATE_KEY` | Yes\*    | —                       | VAPID private key. Keep secret.                                                                                                      |
 | `VAPID_SUBJECT`     | Yes\*    | —                       | Contact email for VAPID (e.g. `mailto:admin@example.com`).                                                                           |
 | `CLIENT_URL`        | No       | `http://localhost:3000` | Allowed CORS origin. Set to the public URL of the client in production.                                                              |
+| `SECURE_COOKIES`    | No       | —                       | Set to `true` in production to enable the `Secure` flag on auth cookies (requires HTTPS).                                            |
+| `MAC_IP`            | No       | —                       | Your machine's local IP address. Updated automatically by `scripts/set-ip.sh` for mobile access on the same WiFi network.            |
 
 \*Push notifications will silently fail without VAPID keys, but all other features work normally.
+
+### Client (`client/.env`)
+
+| Variable               | Required | Description                                                                                                   |
+| ---------------------- | -------- | ------------------------------------------------------------------------------------------------------------- |
+| `VITE_API_URL`         | Yes      | Base URL for API requests. Use `http://localhost:3000/api/v1` for local dev; Docker overrides this to `/api/v1`. |
+| `VITE_VAPID_PUBLIC_KEY`| Yes\*    | The **same** public VAPID key as `VAPID_PUBLIC_KEY` above. Required for push notification subscription in the browser. |
+
+\*Without this key the push subscription step is silently skipped and no notifications are delivered to the client.
 
 ### MONGO_URI — two valid values
 
@@ -240,11 +265,12 @@ MONGO_URI=mongodb://localhost:27017/meal-easy npm run dev
 
 ## Key Business Rules
 
-- **Meal toggle** — only for tomorrow, locked after the configured cutoff time. The server always validates; client time is never trusted.
+- **Meal toggle** — only for tomorrow, locked after the configured per-meal-type cutoff time. The server always validates; client time is never trusted.
 - **Billing lock** — once a billing cycle is submitted, purchases, other costs, and billing data for that month are immutable.
 - **Balance** — always computed dynamically as `sum(Deposits) − sum(UserBill.totalBill)`. Never stored.
 - **Account deletion** — soft-delete only (`status: 'deleted'`, `deletedAt`). No hard deletes.
 - **Meal block** — admin-triggered. Low balance does NOT auto-block meals.
+- **Guest meal limit** — enforced server-side. Admin configures the monthly limit per user in Mess Settings.
 
 ## Useful Commands
 
