@@ -31,6 +31,7 @@ const getAdminDashboard = async (req, res) => {
     activeChefs,
     currentSalaries,
     lockedCycles,
+    newMembersThisWeek,
     allDepositsAgg,
     previousCycle,
     todayMenuDocs,
@@ -60,6 +61,7 @@ const getAdminDashboard = async (req, res) => {
     Chef.find({ isActive: true }).select('_id name salaryAmount'),
     ChefSalary.find({ billingMonth: currentMonth }).select('chefId paidStatus'),
     BillingCycle.find({ isLocked: true }).select('billingMonth'),
+    (() => { const d = new Date(); d.setDate(d.getDate() - 7); return User.countDocuments({ createdAt: { $gte: d }, status: 'active' }); })(),
     Deposit.aggregate([{ $group: { _id: '$userId', total: { $sum: '$amount' } } }]),
     // Most recent locked cycle before current month — provides previousMonthRate
     BillingCycle.findOne({ isLocked: true, billingMonth: { $lt: currentMonth } })
@@ -147,6 +149,7 @@ const getAdminDashboard = async (req, res) => {
     lowStockItems,
     pendingApprovals: { count: pendingUsers.length, users: pendingUsers },
     chefSalaryStatus,
+    newMembersThisWeek,
   });
 };
 
@@ -167,7 +170,7 @@ const getUserDashboard = async (req, res) => {
       calculateBilling(currentMonth),
       MealToggle.aggregate([
         { $match: { userId: new mongoose.Types.ObjectId(userId), date: { $regex: `^${currentMonth}-` }, isOn: true } },
-        { $group: { _id: null, count: { $sum: 1 } } },
+        { $group: { _id: null, mealCount: { $sum: 1 }, guestMealCount: { $sum: '$guestCount' } } },
       ]),
       Stock.find({ isArchived: false, $expr: { $lte: ['$quantity', '$lowThreshold'] } }).select('itemName'),
       Notification.find({ userId }).sort({ createdAt: -1 }).limit(5),
@@ -192,7 +195,8 @@ const getUserDashboard = async (req, res) => {
     todayToggles,
     balance,
     predictedMealRate: billing.mealRate,
-    myMealCountThisMonth: myMealCountAgg[0]?.count ?? 0,
+    myMealCountThisMonth: (myMealCountAgg[0]?.mealCount ?? 0) + (myMealCountAgg[0]?.guestMealCount ?? 0),
+    myGuestMealCountThisMonth: myMealCountAgg[0]?.guestMealCount ?? 0,
     lowStockWarnings: lowStockItems.map((s) => s.itemName),
     recentNotifications,
   });

@@ -1,12 +1,16 @@
+const mongoose = require('mongoose');
 const { Deposit, UserBill, BillingCycle } = require('../models');
 
 const getUserBalance = async (userId, upToMonth) => {
+  // Aggregation $match does not auto-coerce types — always pass an ObjectId.
+  const userObjId = new mongoose.Types.ObjectId(userId);
+
   const cycleFilter = { isLocked: true };
   if (upToMonth) cycleFilter.billingMonth = { $lte: upToMonth };
 
   const [depositResult, lockedCycles] = await Promise.all([
     Deposit.aggregate([
-      { $match: { userId: userId } },
+      { $match: { userId: userObjId } },
       { $group: { _id: null, total: { $sum: '$amount' } } },
     ]),
     BillingCycle.find(cycleFilter).select('billingMonth'),
@@ -19,7 +23,7 @@ const getUserBalance = async (userId, upToMonth) => {
   const lockedMonths = lockedCycles.map((c) => c.billingMonth);
 
   const billResult = await UserBill.aggregate([
-    { $match: { userId: userId, billingMonth: { $in: lockedMonths } } },
+    { $match: { userId: userObjId, billingMonth: { $in: lockedMonths } } },
     { $group: { _id: null, total: { $sum: '$totalBill' } } },
   ]);
 

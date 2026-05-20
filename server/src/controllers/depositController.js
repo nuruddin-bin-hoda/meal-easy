@@ -13,7 +13,7 @@ const recordDeposit = async (req, res, next) => {
       recordedBy: req.user.userId,
     });
 
-    sendPushToUser(deposit.userId, { title: 'Deposit Recorded', body: `Your deposit of ৳${amount} has been recorded.` }).catch(() => {});
+    sendPushToUser(deposit.userId, { title: 'Deposit Recorded', body: `Your deposit of ৳${Number(amount).toFixed(2)} has been recorded.` }).catch(() => {});
 
     await AuditLog.create({
       actorId: req.user.userId,

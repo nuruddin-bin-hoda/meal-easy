@@ -100,7 +100,7 @@ function RateHero({ predictedMealRate, previousMonthRate, totalPurchasesThisMont
       {/* Basis */}
       <Box sx={{ mt: '14px', pt: '12px', borderTop: `1px solid ${tok.hairline}` }}>
         <Typography sx={{ fontSize: 11, color: tok.muted, fontVariantNumeric: 'tabular-nums' }}>
-          {t('dashboard.rateBasis', { spent: fmtN(Math.round(totalPurchasesThisMonth)), meals: fmtN(totalMealsThisMonth) })}
+          {t('dashboard.rateBasis', { spent: fmtN(totalPurchasesThisMonth), meals: fmtN(totalMealsThisMonth) })}
         </Typography>
       </Box>
 
@@ -222,6 +222,7 @@ export default function AdminDashboard() {
     lowBalanceUsers = [],
     lowStockItems = [],
     chefSalaryStatus = [],
+    newMembersThisWeek = 0,
   } = data;
 
   // KPI row helpers
@@ -285,7 +286,7 @@ export default function AdminDashboard() {
             {fmtN(totalActiveUsers)}
           </Typography>
           <Typography sx={{ fontSize: 12, color: tok.dim, mt: 0.75 }}>
-            {t('dashboard.membersWeekDelta', { n: 0 })}
+            {t('dashboard.membersWeekDelta', { n: newMembersThisWeek })}
           </Typography>
         </Box>
 

@@ -19,6 +19,11 @@ import { useTopbar } from '../context/TopbarContext';
 const currentMonth = () => format(new Date(), 'yyyy-MM');
 const today = () => format(new Date(), 'yyyy-MM-dd');
 
+const fmtAmount = (val) =>
+  val != null
+    ? `৳${Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    : '—';
+
 export default function ChefProfilePage() {
   const { id } = useParams();
   const { user } = useAuth();
@@ -246,7 +251,7 @@ export default function ChefProfilePage() {
             <Box>
               <Typography variant="caption" color="text.secondary">{t('chefs.monthlySalary')}</Typography>
               <Typography fontWeight={600}>
-                {chef.salaryAmount != null ? `৳${chef.salaryAmount.toLocaleString()}` : '—'}
+                {fmtAmount(chef.salaryAmount)}
               </Typography>
             </Box>
           </Stack>
@@ -288,7 +293,7 @@ export default function ChefProfilePage() {
             ) : salaries.map(s => (
               <TableRow key={s._id} hover>
                 <TableCell>{s.billingMonth}</TableCell>
-                <TableCell align="right">৳{s.salaryAmount?.toLocaleString()}</TableCell>
+                <TableCell align="right">{fmtAmount(s.salaryAmount)}</TableCell>
                 <TableCell align="center">
                   <Chip
                     label={s.paidStatus === 'paid' ? t('common.paid') : t('common.unpaid')}
@@ -340,7 +345,7 @@ export default function ChefProfilePage() {
             ) : bonuses.map(b => (
               <TableRow key={b._id} hover>
                 <TableCell>{format(new Date(b.date), 'dd MMM yyyy')}</TableCell>
-                <TableCell align="right">৳{b.amount?.toLocaleString()}</TableCell>
+                <TableCell align="right">{fmtAmount(b.amount)}</TableCell>
                 <TableCell>{b.reason}</TableCell>
               </TableRow>
             ))}

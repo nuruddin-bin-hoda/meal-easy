@@ -123,6 +123,7 @@ export default function UserDashboard() {
     balance = 0,
     predictedMealRate = 0,
     myMealCountThisMonth = 0,
+    myGuestMealCountThisMonth = 0,
     tomorrowMenu = [],
     recentNotifications = [],
   } = data;
@@ -181,7 +182,7 @@ export default function UserDashboard() {
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
         {[
           { label: t('dashboard.balance'),        value: fmt(balance),           sub: balance >= 0 ? '' : '⚠ Low', color: balance >= 0 ? tok.posInk : tok.dangerInk },
-          { label: `${t('dashboard.mealsThisMonth')} · ${monthName}`, value: String(myMealCountThisMonth), sub: t('dashboard.mealsToggledOn'), color: tok.ink },
+          { label: `${t('dashboard.mealsThisMonth')} · ${monthName}`, value: String(myMealCountThisMonth), sub: myGuestMealCountThisMonth > 0 ? `incl. ${myGuestMealCountThisMonth} guest` : t('dashboard.mealsToggledOn'), color: tok.ink },
           { label: t('dashboard.predictedRate'),  value: fmt(predictedMealRate), sub: t('dashboard.perMeal'), color: tok.ink },
         ].map((k, i) => (
           <Box key={i} sx={{ bgcolor: tok.surface, border: `1px solid ${tok.hairline}`, borderRadius: '12px', p: '12px 14px' }}>

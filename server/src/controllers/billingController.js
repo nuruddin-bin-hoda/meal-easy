@@ -1,4 +1,4 @@
-const { BillingCycle, UserBill, User, Deposit, AuditLog } = require('../models');
+const { BillingCycle, UserBill, User, Deposit, AuditLog, MessSettings, Notification } = require('../models');
 const { calculateBilling } = require('../utils/billingEngine');
 const { sendPushToAllUsers } = require('../utils/pushService');
 const { generateBillingReportHTML } = require('../utils/billingReportTemplate');
@@ -65,7 +65,34 @@ const submitBilling = async (req, res, next) => {
       newValue: billingCycle.toObject(),
     });
 
-    sendPushToAllUsers({ title: 'Monthly Billing Submitted', body: `Billing for ${month} has been finalised.` }).catch(() => {});
+    // Fire-and-forget — must not block or fail the billing submission
+    (async () => {
+      const settings = await MessSettings.findOne().select('monthlyReportAlertsEnabled');
+      if (!settings?.monthlyReportAlertsEnabled) return;
+
+      const billedUserIds = result.userBills.map(u => u.userId);
+      const notifMessage  = `Your bill for ${month} has been submitted.`;
+
+      // Save a Notification document for every user who received a bill,
+      // regardless of whether they have a push subscription.
+      await Promise.all(
+        billedUserIds.map(userId =>
+          Notification.create({
+            userId,
+            userModel: 'User',
+            event:   'BILLING_SUBMITTED',
+            message: notifMessage,
+          }).catch(() => {}),
+        ),
+      );
+
+      // Send web push to all subscribed users.
+      await sendPushToAllUsers({
+        title: 'Monthly Bill Ready',
+        body:  `Your bill for ${month} has been submitted. Check your report.`,
+        data:  { event: 'BILLING_SUBMITTED', url: '/report' },
+      });
+    })().catch(err => console.error('Billing notification error:', err));
 
     res.status(201).json({ billingCycle });
   } catch (err) {
@@ -83,7 +110,7 @@ const getBilling = async (req, res, next) => {
 
     if (role === 'admin' || role === 'superadmin') {
       const userBills = await UserBill.find({ billingMonth: month })
-        .populate('userId', 'name email');
+        .populate('userId', 'name roomNumber');
       return res.json({ billingCycle, userBills });
     }
 

@@ -28,19 +28,24 @@ const calculateBilling = async (billingMonth) => {
     0,
   );
 
-  const mealRate = totalMealCount > 0 ? totalItemCost / totalMealCount : 0;
-  const otherCostPerUser = activeUserCount > 0 ? totalOtherCost / activeUserCount : 0;
+  const mealRate = totalMealCount > 0
+    ? Math.round((totalItemCost / totalMealCount) * 10000) / 10000
+    : 0;
+  const otherCostPerUser = activeUserCount > 0
+    ? Math.round((totalOtherCost / activeUserCount) * 10000) / 10000
+    : 0;
 
   const userBills = [...userMap.values()].map((u) => {
-    const mealCost = mealRate * (u.mealCount + u.guestMealCount);
-    const otherCostShare = otherCostPerUser;
+    const mealCost      = Math.round((mealRate * (u.mealCount + u.guestMealCount)) * 100) / 100;
+    const otherCostShare = Math.round(otherCostPerUser * 100) / 100;
+    const totalBill      = Math.round((mealCost + otherCostShare) * 100) / 100;
     return {
       userId: u.userId,
       mealCount: u.mealCount,
       guestMealCount: u.guestMealCount,
       mealCost,
       otherCostShare,
-      totalBill: mealCost + otherCostShare,
+      totalBill,
     };
   });
 
@@ -78,7 +83,7 @@ const projectRate = async (billingMonth) => {
 
   const projectedFinalRate =
     result.totalMealCount > 0
-      ? (result.totalItemCost + result.totalOtherCost) / result.totalMealCount
+      ? Math.round(((result.totalItemCost + result.totalOtherCost) / result.totalMealCount) * 10000) / 10000
       : 0;
 
   return { projectedFinalRate, cycleDay, cycleTotal };

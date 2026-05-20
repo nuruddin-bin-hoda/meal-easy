@@ -119,7 +119,7 @@ export default function ReportPage() {
   }, [data]);
 
   const totalMeals = data
-    ? Object.values(data.totalMealsByType ?? {}).reduce((s, n) => s + n, 0)
+    ? Object.values(data.totalMealsByType ?? {}).reduce((s, n) => s + n, 0) + (data.totalGuestMeals ?? 0)
     : 0;
 
   const pad = { xs: '16px', md: '28px' };
@@ -202,7 +202,7 @@ export default function ReportPage() {
 
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: '12px', mb: '16px' }}>
             <SummaryCard label={t('report.mealRate')} value={`৳${(data.mealRate ?? 0).toFixed(2)}`} tok={tok} />
-            <SummaryCard label={t('report.totalMeals')} value={totalMeals} sub={`incl. ${(data?.guestMealCount ?? 0)} guest`} tok={tok} />
+            <SummaryCard label={t('report.totalMeals')} value={totalMeals} sub={`incl. ${(data?.totalGuestMeals ?? 0)} guest`} tok={tok} />
             <SummaryCard label={t('report.totalBill')} value={`৳${(data.totalBill ?? 0).toFixed(2)}`} tok={tok} />
             <SummaryCard
               label={t('report.closingBalance')}
