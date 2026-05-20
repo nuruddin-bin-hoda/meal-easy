@@ -37,11 +37,7 @@ export default function PurchasesPage() {
 
   const notify = (message, severity = 'success') => setSnackbar({ open: true, message, severity });
 
-  useEffect(() => {
-    if (user && user.role !== 'admin' && user.role !== 'superadmin') {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [user, navigate]);
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
 
   useEffect(() => {
     api.get('/users?status=active&limit=200')
@@ -97,7 +93,7 @@ export default function PurchasesPage() {
     <Container maxWidth="lg" sx={{ py: 3 }}>
       <Typography variant="h5" fontWeight={700} gutterBottom>{t('purchases.title')}</Typography>
 
-      <Card elevation={2} sx={{ mb: 3 }}>
+      {isAdmin && <Card elevation={2} sx={{ mb: 3 }}>
         <CardHeader title={t('purchases.recordPurchase')} titleTypographyProps={{ variant: 'h6' }} sx={{ pb: 0 }} />
         <CardContent>
           <Box component="form" onSubmit={handleSubmit}>
@@ -145,7 +141,7 @@ export default function PurchasesPage() {
             </Stack>
           </Box>
         </CardContent>
-      </Card>
+      </Card>}
 
       <Card elevation={1} sx={{ mb: 2 }}>
         <CardContent sx={{ py: '12px !important' }}>

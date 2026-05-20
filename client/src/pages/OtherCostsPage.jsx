@@ -42,11 +42,7 @@ export default function OtherCostsPage() {
 
   const notify = (message, severity = 'success') => setSnackbar({ open: true, message, severity });
 
-  useEffect(() => {
-    if (user && user.role !== 'admin' && user.role !== 'superadmin') {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [user, navigate]);
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
 
   const loadData = useCallback(async () => {
     if (!/^\d{4}-\d{2}$/.test(viewMonth)) return;
@@ -109,7 +105,7 @@ export default function OtherCostsPage() {
     <Container maxWidth="md" sx={{ py: 3 }}>
       <Typography variant="h5" fontWeight={700} gutterBottom>{t('costs.title')}</Typography>
 
-      <Card elevation={2} sx={{ mb: 3 }}>
+      {isAdmin && <Card elevation={2} sx={{ mb: 3 }}>
         <CardHeader title={t('costs.recordCost')} titleTypographyProps={{ variant: 'h6' }} sx={{ pb: 0 }} />
         <CardContent>
           <Box component="form" onSubmit={handleSubmit}>
@@ -141,7 +137,7 @@ export default function OtherCostsPage() {
             </Stack>
           </Box>
         </CardContent>
-      </Card>
+      </Card>}
 
       <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
         <DatePicker
@@ -165,13 +161,13 @@ export default function OtherCostsPage() {
               <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: 'action.hover' } }}>
                 <TableCell>{t('costs.description')}</TableCell>
                 <TableCell align="right">{t('costs.amount')}</TableCell>
-                <TableCell align="center" sx={{ width: 64 }}>{t('common.delete')}</TableCell>
+                {isAdmin && <TableCell align="center" sx={{ width: 64 }}>{t('common.delete')}</TableCell>}
               </TableRow>
             </TableHead>
             <TableBody>
               {costs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={3} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                  <TableCell colSpan={isAdmin ? 3 : 2} align="center" sx={{ py: 4, color: 'text.secondary' }}>
                     {t('costs.noCosts', { month: viewMonth })}
                   </TableCell>
                 </TableRow>
@@ -179,7 +175,7 @@ export default function OtherCostsPage() {
                 <TableRow key={c._id} hover>
                   <TableCell>{c.description}</TableCell>
                   <TableCell align="right">৳{c.amount.toFixed(2)}</TableCell>
-                  <TableCell align="center">
+                  {isAdmin && <TableCell align="center">
                     <IconButton
                       size="small" color="error"
                       disabled={isLocked || deleting === c._id}
@@ -189,7 +185,7 @@ export default function OtherCostsPage() {
                         ? <CircularProgress size={16} />
                         : <DeleteIcon fontSize="small" />}
                     </IconButton>
-                  </TableCell>
+                  </TableCell>}
                 </TableRow>
               ))}
               {costs.length > 0 && (
@@ -200,7 +196,7 @@ export default function OtherCostsPage() {
                   <TableCell align="right" sx={{ fontWeight: 700, borderTop: 2, borderColor: 'divider' }}>
                     ৳{monthTotal.toFixed(2)}
                   </TableCell>
-                  <TableCell sx={{ borderTop: 2, borderColor: 'divider' }} />
+                  {isAdmin && <TableCell sx={{ borderTop: 2, borderColor: 'divider' }} />}
                 </TableRow>
               )}
             </TableBody>

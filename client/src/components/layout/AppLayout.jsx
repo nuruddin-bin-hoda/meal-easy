@@ -55,6 +55,8 @@ const NAV_USER = [
   { path: '/dashboard', label: 'nav.dashboard',  Icon: DashboardIcon },
   { path: '/meals',     label: 'nav.meals',       Icon: MealsIcon     },
   { path: '/menu',      label: 'nav.menu',        Icon: MenuBookIcon  },
+  { path: '/purchases', label: 'nav.purchases',   Icon: PurchasesIcon },
+  { path: '/costs',     label: 'nav.costs',       Icon: CostsIcon     },
   { path: '/reports',   label: 'nav.reports',     Icon: ReportIcon    },
   { path: '/profile',   label: 'nav.profile',     Icon: ProfileIcon   },
 ];

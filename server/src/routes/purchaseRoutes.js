@@ -26,14 +26,14 @@ router.post(
 router.get(
   '/purchases',
   authenticate,
-  authorize(['admin', 'superadmin']),
+  authorize(['admin', 'superadmin', 'user']),
   listPurchases,
 );
 
 router.get(
   '/purchases/:id',
   authenticate,
-  authorize(['admin', 'superadmin']),
+  authorize(['admin', 'superadmin', 'user']),
   [param('id').isMongoId().withMessage('id must be a valid MongoDB ObjectId.')],
   validate,
   getPurchase,

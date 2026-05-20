@@ -25,7 +25,7 @@ router.post(
 router.get(
   '/costs',
   authenticate,
-  authorize(['admin', 'superadmin']),
+  authorize(['admin', 'superadmin', 'user']),
   listOtherCosts,
 );
 
