@@ -59,7 +59,7 @@ function ChipInput({ mealType, items, inputValue, onAdd, onDelete, onInputChange
 export default function SetMenuPage() {
   const { t } = useTranslation();
   const { setTopbar } = useTopbar();
-  const [date, setDate] = useState(() => getLocalDateString(1));
+  const [date, setDate] = useState(() => getLocalDateString(0));
 
   useEffect(() => {
     setTopbar({ title: t('nav.setMenu'), subtitle: 'Admin' });

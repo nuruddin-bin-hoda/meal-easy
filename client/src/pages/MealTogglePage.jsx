@@ -95,14 +95,15 @@ export default function MealTogglePage() {
   const debounceRef = useRef({});
 
   useEffect(() => {
-    const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-    const label = tomorrow.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-    setTopbar({ title: t('meal.tomorrowMeals'), subtitle: label });
+    const today = new Date();
+    const label = today.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    setTopbar({ title: t('meal.todayMeals'), subtitle: label });
     return () => setTopbar({ title: '', subtitle: '', actions: null });
   }, [t, setTopbar]);
 
   useEffect(() => {
-    Promise.all([api.get('/meals/today'), api.get('/menus/tomorrow')])
+    const todayStr = new Date().toISOString().split('T')[0];
+    Promise.all([api.get('/meals/today'), api.get(`/menus/${todayStr}`)])
       .then(([toggleRes, menuRes]) => {
         const apiToggles = toggleRes.data.toggles ?? [];
         setMeals(apiToggles);
@@ -164,7 +165,7 @@ export default function MealTogglePage() {
   const summaryCard = (
     <Box sx={{ bgcolor: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '12px', p: '16px 18px' }}>
       <Typography sx={{ fontSize: 13, fontWeight: 600, color: tok.ink, mb: '12px' }}>
-        Tomorrow's Summary
+        Today's Summary
       </Typography>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

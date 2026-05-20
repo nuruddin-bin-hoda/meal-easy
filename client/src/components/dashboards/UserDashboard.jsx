@@ -131,8 +131,8 @@ export default function UserDashboard() {
   const mealOnCount = toggles.filter((tg) => tg.isOn).length;
   const guestTotal  = toggles.reduce((s, tg) => s + (tg.isOn ? (tg.guestCount ?? 0) : 0), 0);
   const estimatedCost = mealOnCount * predictedMealRate;
-  const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowLabel = tomorrow.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const today = new Date();
+  const todayLabel = today.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   const monthName = new Date().toLocaleDateString('en-US', { month: 'short' });
 
   const pad = { xs: '16px', md: '28px' };
@@ -202,9 +202,9 @@ export default function UserDashboard() {
         <Box sx={{ p: '14px 16px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box>
             <Typography sx={{ fontSize: 11, color: tok.muted, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500 }}>
-              {t('dashboard.tomorrowMeals')}
+              {t('meal.todayMeals')}
             </Typography>
-            <Typography sx={{ fontSize: 15, fontWeight: 500, mt: '2px', color: tok.ink }}>{tomorrowLabel}</Typography>
+            <Typography sx={{ fontSize: 15, fontWeight: 500, mt: '2px', color: tok.ink }}>{todayLabel}</Typography>
           </Box>
         </Box>
 
