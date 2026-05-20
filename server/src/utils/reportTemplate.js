@@ -1,3 +1,39 @@
+const fs   = require('fs');
+const path = require('path');
+
+// Fonts are read once at module load so each PDF render doesn't hit disk.
+const _fontBase64 = (() => {
+  const read = (name) => {
+    try {
+      const p = path.join(__dirname, '../assets/fonts', name);
+      return fs.readFileSync(p).toString('base64');
+    } catch {
+      return null;
+    }
+  };
+  return {
+    hindSiliguri:    read('HindSiliguri-Regular.ttf'),
+    notoSansBengali: read('NotoSansBengali-Regular.ttf'),
+  };
+})();
+
+const _fontFaceCSS = [
+  _fontBase64.hindSiliguri && `
+    @font-face {
+      font-family: 'Hind Siliguri';
+      src: url('data:font/truetype;base64,${_fontBase64.hindSiliguri}') format('truetype');
+      font-weight: 400;
+      font-style: normal;
+    }`,
+  _fontBase64.notoSansBengali && `
+    @font-face {
+      font-family: 'Noto Sans Bengali';
+      src: url('data:font/truetype;base64,${_fontBase64.notoSansBengali}') format('truetype');
+      font-weight: 400;
+      font-style: normal;
+    }`,
+].filter(Boolean).join('\n');
+
 /**
  * Generates the full HTML string for a user's monthly report PDF.
  * @param {object} data  - same shape as getReportData response
@@ -65,12 +101,11 @@ const generateReportHTML = (data, lang = 'en') => {
   const totalMeals = Object.values(data.totalMealsByType ?? {}).reduce((s, n) => s + n, 0);
   const depositsTotal = (data.deposits ?? []).reduce((s, d) => s + d.amount, 0);
 
-  // ── font import: always include Hind Siliguri so Bengali renders correctly ─
-  const fontImport = `@import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&family=Noto+Sans:wght@400;600;700&display=swap');`;
-
+  // Locally embedded fonts are used for both Bengali and Latin to ensure
+  // the ৳ symbol renders correctly inside Docker (no internet at render time).
   const bodyFont = isBn
-    ? "'Hind Siliguri', 'Noto Sans', sans-serif"
-    : "'Noto Sans', Arial, sans-serif";
+    ? "'Hind Siliguri', 'Noto Sans Bengali', sans-serif"
+    : "'Hind Siliguri', 'Noto Sans Bengali', Arial, sans-serif";
 
   // ── attendance table rows ────────────────────────────────────────────────
   const attendanceRows = (data.mealAttendance ?? []).map((day) => {
@@ -114,7 +149,7 @@ const generateReportHTML = (data, lang = 'en') => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${esc(t.title)}</title>
   <style>
-    ${fontImport}
+    ${_fontFaceCSS}
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 

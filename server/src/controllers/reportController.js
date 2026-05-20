@@ -134,9 +134,13 @@ const downloadReportPDF = async (req, res) => {
   const html = generateReportHTML(data, data.language);
   const pdfBuffer = await generatePDF(html);
 
+  const slug = (data.user?.name ?? 'user').toLowerCase().replace(/\s+/g, '-');
+  const [yyyy, mm] = month.split('-');
+  const filename = `report-${slug}-${mm}-${yyyy}.pdf`;
+
   res.set({
     'Content-Type': 'application/pdf',
-    'Content-Disposition': `attachment; filename="report-${userId}-${month}.pdf"`,
+    'Content-Disposition': `attachment; filename="${filename}"`,
     'Content-Length': pdfBuffer.length,
   });
   res.send(pdfBuffer);
