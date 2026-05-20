@@ -10,6 +10,7 @@ import {
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
 import LockIcon from '@mui/icons-material/Lock';
+import DownloadIcon from '@mui/icons-material/Download';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
@@ -45,6 +46,7 @@ export default function BillingPage() {
   const [users, setUsers] = useState({});
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
@@ -99,6 +101,24 @@ export default function BillingPage() {
 
   useEffect(() => { loadBilling(); }, [loadBilling]);
 
+  const handleDownloadPDF = async () => {
+    setDownloading(true);
+    try {
+      const res = await api.get(`/billing/${month}/pdf`, { responseType: 'blob' });
+      const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      const [yyyy, mm] = month.split('-');
+      a.href = url;
+      a.download = `billing-${mm}-${yyyy}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      notify(t('billing.failedToLoad'), 'error');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   const handleSubmit = async () => {
     setConfirmOpen(false);
     setSubmitting(true);
@@ -150,6 +170,16 @@ export default function BillingPage() {
           <Typography variant="body2" color="text.secondary">
             {t('billing.submitted', { date: formatDateTime(billingCycle.submittedAt) })}
           </Typography>
+        )}
+        {(data || isLocked) && (user?.role === 'admin' || user?.role === 'superadmin') && (
+          <Button
+            variant="outlined"
+            startIcon={downloading ? <CircularProgress size={16} color="inherit" /> : <DownloadIcon />}
+            disabled={downloading}
+            onClick={handleDownloadPDF}
+          >
+            {downloading ? 'Downloading…' : 'Download PDF'}
+          </Button>
         )}
       </Stack>
 

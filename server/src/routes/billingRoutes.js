@@ -3,7 +3,7 @@ const { param } = require('express-validator');
 const authenticate = require('../middleware/authenticate');
 const authorize = require('../middleware/authorize');
 const validate = require('../middleware/validate');
-const { previewBilling, submitBilling, getBilling, getPredictedRate } = require('../controllers/billingController');
+const { previewBilling, submitBilling, getBilling, getPredictedRate, downloadBillingPDF } = require('../controllers/billingController');
 
 const router = Router();
 
@@ -27,6 +27,15 @@ router.post(
   [monthParam],
   validate,
   submitBilling,
+);
+
+router.get(
+  '/billing/:month/pdf',
+  authenticate,
+  authorize(['admin', 'superadmin']),
+  [monthParam],
+  validate,
+  downloadBillingPDF,
 );
 
 // GET /billing/:month/rate must be registered before /billing/:month
